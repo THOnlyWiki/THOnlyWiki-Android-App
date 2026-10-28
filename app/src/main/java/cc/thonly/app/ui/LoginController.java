@@ -132,7 +132,8 @@ public final class LoginController {
         host.onAuthenticated();
     }
 
-    private void logout() {
+    /** 退出登录：清本地会话与 WebView Cookie，抽屉会跟着变回「登录/注册」 */
+    public void logout() {
         session.clear();
         CookieBridge.clear(activity);
         render();

@@ -66,6 +66,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private View drawer;
     private TextView offlineBanner;
     private TextView[] navItems;
+    private TextView navLoginItem;
+    private TextView navRegisterItem;
+    private TextView navLogoutItem;
+    private TextView accountLabel;
 
     private int currentPage = PAGE_LIST;
     private boolean drawerOpen;
@@ -185,6 +189,31 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
         TextView versionLabel = findViewById(R.id.navVersion);
         versionLabel.setText(getString(R.string.version_label, currentVersion.name()));
+
+        navLoginItem = navItems[PAGE_LOGIN];
+        navRegisterItem = navItems[PAGE_REGISTER];
+        navLogoutItem = findViewById(R.id.navLogout);
+        accountLabel = findViewById(R.id.accountLabel);
+        navLogoutItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeDrawer();
+                loginController.logout();
+            }
+        });
+
+        updateAuthUi();
+    }
+
+    /** 抽屉里的登录/注册项跟着登录态走：登录后换成「退出登录」 */
+    private void updateAuthUi() {
+        boolean loggedIn = session.isLoggedIn();
+        navLoginItem.setVisibility(loggedIn ? View.GONE : View.VISIBLE);
+        navRegisterItem.setVisibility(loggedIn ? View.GONE : View.VISIBLE);
+        navLogoutItem.setVisibility(loggedIn ? View.VISIBLE : View.GONE);
+        accountLabel.setText(loggedIn
+                ? getString(R.string.drawer_account, session.username())
+                : getString(R.string.drawer_not_logged_in));
     }
 
     private AppVersion resolveCurrentVersion() {
@@ -273,6 +302,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
     @Override
     public void onAuthenticated() {
+        updateAuthUi();
         // 先刷新（没加载过就会直接打开首页），再切过去，避免重复请求
         webController.reload();
         selectPage(PAGE_WEB);
@@ -280,6 +310,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
     @Override
     public void onSessionChanged() {
+        updateAuthUi();
         webController.reload();
     }
 

@@ -118,6 +118,17 @@
             android:background="@color/divider" />
 
         <TextView
+            android:id="@+id/accountLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="20dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
             android:id="@+id/navList"
             style="@style/NavItem"
             android:text="@string/tab_list" />
@@ -141,6 +152,12 @@
             android:id="@+id/navRegister"
             style="@style/NavItem"
             android:text="@string/nav_register" />
+
+        <TextView
+            android:id="@+id/navLogout"
+            style="@style/NavItem"
+            android:text="@string/auth_logout"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/navSettings"

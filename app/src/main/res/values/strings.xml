@@ -57,6 +57,8 @@
     <string name="nav_web">主站</string>
     <string name="nav_login">登录</string>
     <string name="nav_register">注册</string>
+    <string name="drawer_not_logged_in">未登录</string>
+    <string name="drawer_account">已登录：%1$s</string>
 
     <string name="auth_login">登录</string>
     <string name="auth_register">注册</string>
