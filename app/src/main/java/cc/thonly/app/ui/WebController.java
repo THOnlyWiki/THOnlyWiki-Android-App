@@ -29,15 +29,14 @@ import cc.thonly.app.util.AppUrls;
 public final class WebController {
 
     /**
-     * 站点自带的导航外壳在 App 里是重复的（App 有自己的抽屉），进页面后隐藏掉。
+     * 站点在 App 里显示时去掉的两个元素：顶部 wordmark 图，以及侧栏的 logo 链接。
      *
-     * <p>注意不要用 {@code .mdui-ripple} 这种工具类做选择器——它还挂在搜索按钮和
-     * 上传按钮上，会一起被干掉。这里只打具体的结构元素，保留 {@code #mw-header-container}
-     * 里的搜索框（App 没有站点搜索能力）。
+     * <p>不能直接写 {@code .mdui-ripple}——那是站点的水波纹工具类，同时挂在
+     * {@code #header-upload}（上传）和 {@code #header-search-button}（搜索）上，
+     * 按类隐藏会把工具栏一起干掉。这里只打 logo 那个链接本身。
      */
     private static final String APP_CHROME_CSS =
-            "#mw-site-navigation,#p-logo-text,#mw-footer-container,#menus-cover{display:none!important}"
-                    + "#mw-content-container{margin-left:0!important;padding-top:0!important}";
+            "#p-banner,a.mw-wiki-logo{display:none!important}";
 
     private static final String INJECT_CHROME_JS =
             "(function(){var id='thonly-app-chrome';"

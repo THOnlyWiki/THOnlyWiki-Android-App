@@ -222,17 +222,20 @@ https://thonly.cc/index.php?title=WikiKernel%3ASidebar-App&action=raw
 抽屉分两区：**内容区**（速查表 / 日历 / 主站，可被 `replace` 接管）和
 **系统区**（登录 / 注册 / 退出 / 设置）。系统区永远保留，避免配置写坏后用户连退出都找不到。
 
-### 站点侧栏的隐藏
+### App 内隐藏的站点元素
 
-App 打开网页时会注入一段 CSS，隐藏站点自带的导航外壳：
+App 打开网页时会在 `<head>` 里注入一段 CSS，只去掉两个装饰元素：
 
 ```css
-#mw-site-navigation,#p-logo-text,#mw-footer-container,#menus-cover{display:none!important}
-#mw-content-container{margin-left:0!important;padding-top:0!important}
+#p-banner, a.mw-wiki-logo { display: none !important; }
 ```
 
-保留 `#mw-header-container` 里的搜索框。**不要用 `.mdui-ripple` 做选择器**——
-它还挂在搜索按钮和上传按钮上，会一起被隐藏。
+- `#p-banner` —— 顶部那条 750×80 的 wordmark 图
+- `a.mw-wiki-logo` —— 侧栏的 logo 链接
+
+**不要用 `.mdui-ripple` 做选择器**：它是站点的水波纹工具类，同时挂在
+`#header-upload`（上传）和 `#header-search-button`（搜索）上，按类隐藏会把工具栏一起干掉。
+其余元素（侧栏、页脚、工具栏）一律不动。
 
 ## 七、活动增删改（App 端）
 
