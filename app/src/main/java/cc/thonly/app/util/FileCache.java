@@ -65,6 +65,24 @@ public final class FileCache {
         return new File(directory, key);
     }
 
+    /** 清空缓存目录，设置页的「清除本地缓存」用 */
+    public void clear() {
+        deleteChildren(directory);
+    }
+
+    private static void deleteChildren(File directory) {
+        File[] children = directory.listFiles();
+        if (children == null) {
+            return;
+        }
+        for (File child : children) {
+            if (child.isDirectory()) {
+                deleteChildren(child);
+            }
+            child.delete();
+        }
+    }
+
     private static void closeQuietly(java.io.Closeable closeable) {
         if (closeable != null) {
             try {

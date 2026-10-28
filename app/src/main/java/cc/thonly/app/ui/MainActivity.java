@@ -13,30 +13,38 @@ import java.io.File;
 import java.util.Calendar;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.EventStore;
 import cc.thonly.app.data.RemoteEventRepository;
+import cc.thonly.app.data.SettingsStore;
+import cc.thonly.app.data.UpdateChecker;
 import cc.thonly.app.util.FileCache;
 
 /**
- * 应用入口，只负责装配：数据仓库、两个页面控制器、右侧导航抽屉。
- * 具体业务都在 {@link ListController} 和 {@link CalendarController} 里。
- *
- * <p>导航用右侧抽屉而不是底部标签栏，页面多了直接往里加条目即可，不用改布局。
+ * 应用入口，只负责装配：数据仓库、各页面控制器、右侧导航抽屉、启动时检查更新。
+ * 具体业务都在各自的 Controller 里。
  */
 public final class MainActivity extends Activity {
 
     private static final int PAGE_LIST = 0;
     private static final int PAGE_CALENDAR = 1;
+    private static final int PAGE_SETTINGS = 2;
+
     private static final String CACHE_DIR_NAME = "activity";
     private static final long DRAWER_ANIMATION_MS = 200L;
 
     private EventStore store;
     private EventActions actions;
+    private SettingsStore settings;
+    private UpdateChecker updateChecker;
+    private FileCache cache;
+    private AppVersion currentVersion;
+
     private ListController listController;
     private CalendarController calendarController;
+    private SettingsController settingsController;
 
-    private View listPage;
-    private View calendarPage;
+    private View[] pages;
     private View scrim;
     private View drawer;
     private TextView[] navItems;
@@ -50,18 +58,26 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        settings = new SettingsStore(this);
+        updateChecker = new UpdateChecker();
+        currentVersion = resolveCurrentVersion();
+        cache = new FileCache(new File(getCacheDir(), CACHE_DIR_NAME));
         actions = new EventActions(this);
-        store = new EventStore(new RemoteEventRepository(
-                new FileCache(new File(getCacheDir(), CACHE_DIR_NAME))));
+        store = new EventStore(new RemoteEventRepository(cache));
 
         FrameLayout content = findViewById(R.id.content);
-        listPage = getLayoutInflater().inflate(R.layout.view_list, content, false);
-        calendarPage = getLayoutInflater().inflate(R.layout.view_calendar, content, false);
+        View listPage = getLayoutInflater().inflate(R.layout.view_list, content, false);
+        View calendarPage = getLayoutInflater().inflate(R.layout.view_calendar, content, false);
+        View settingsPage = getLayoutInflater().inflate(R.layout.view_settings, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
+        content.addView(settingsPage);
+        pages = new View[]{listPage, calendarPage, settingsPage};
 
         listController = new ListController(this, listPage, store, actions);
         calendarController = new CalendarController(this, calendarPage, store, actions);
+        settingsController = new SettingsController(this, settingsPage, settings,
+                updateChecker, currentVersion, cache);
         store.addListener(listController);
         store.addListener(calendarController);
 
@@ -70,7 +86,10 @@ public final class MainActivity extends Activity {
 
         selectPage(PAGE_LIST);
         store.load(currentYear(), false);
+        checkUpdateOnStart();
     }
+
+    // ------------------------------------------------------------ 装配
 
     private void bindHeader() {
         findViewById(R.id.menuButton).setOnClickListener(new View.OnClickListener() {
@@ -102,7 +121,8 @@ public final class MainActivity extends Activity {
 
         navItems = new TextView[]{
                 findViewById(R.id.navList),
-                findViewById(R.id.navCalendar)
+                findViewById(R.id.navCalendar),
+                findViewById(R.id.navSettings)
         };
         for (int i = 0; i < navItems.length; i++) {
             final int page = i;
@@ -116,17 +136,23 @@ public final class MainActivity extends Activity {
         }
 
         TextView versionLabel = findViewById(R.id.navVersion);
-        versionLabel.setText(getString(R.string.version_label, versionName()));
+        versionLabel.setText(getString(R.string.version_label, currentVersion.name()));
     }
 
-    private String versionName() {
+    private AppVersion resolveCurrentVersion() {
         try {
             String name = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return name == null ? "" : name;
-        } catch (PackageManager.NameNotFoundException e) {
-            return "";
+            AppVersion version = AppVersion.parse(name);
+            if (version != null) {
+                return version;
+            }
+        } catch (PackageManager.NameNotFoundException ignored) {
+            // 落到下面的兜底
         }
+        return AppVersion.parse("0.0.0");
     }
+
+    // ------------------------------------------------------------ 导航
 
     private void toggleDrawer() {
         if (drawerOpen) {
@@ -165,10 +191,9 @@ public final class MainActivity extends Activity {
 
     private void selectPage(int page) {
         currentPage = page;
-        boolean listVisible = page == PAGE_LIST;
-        listPage.setVisibility(listVisible ? View.VISIBLE : View.GONE);
-        calendarPage.setVisibility(listVisible ? View.GONE : View.VISIBLE);
-
+        for (int i = 0; i < pages.length; i++) {
+            pages[i].setVisibility(i == page ? View.VISIBLE : View.GONE);
+        }
         for (int i = 0; i < navItems.length; i++) {
             boolean active = i == page;
             navItems[i].setTextColor(getColor(active ? R.color.accent : R.color.text_primary));
@@ -177,11 +202,33 @@ public final class MainActivity extends Activity {
                     : Typeface.create("sans-serif", Typeface.NORMAL));
         }
 
-        if (listVisible) {
-            calendarController.onHidden();
-        } else {
+        if (page == PAGE_CALENDAR) {
             calendarController.onShown();
+        } else {
+            calendarController.onHidden();
         }
+        if (page == PAGE_SETTINGS) {
+            settingsController.onShown();
+        }
+    }
+
+    // ------------------------------------------------------------ 更新检查
+
+    private void checkUpdateOnStart() {
+        if (!settings.isAutoCheckUpdate()) {
+            return;
+        }
+        updateChecker.check(new UpdateChecker.Listener() {
+            @Override
+            public void onLatestVersion(AppVersion latest) {
+                UpdateDialog.showIfNeeded(MainActivity.this, currentVersion, latest, settings);
+            }
+
+            @Override
+            public void onCheckFailed() {
+                // 启动时静默失败，不打扰用户
+            }
+        });
     }
 
     private static int currentYear() {
@@ -201,7 +248,7 @@ public final class MainActivity extends Activity {
                 closeDrawer();
                 return true;
             }
-            if (currentPage == PAGE_CALENDAR) {
+            if (currentPage != PAGE_LIST) {
                 selectPage(PAGE_LIST);
                 return true;
             }
