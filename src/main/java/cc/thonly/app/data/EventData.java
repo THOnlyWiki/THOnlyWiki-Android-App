@@ -105,11 +105,46 @@ public final class EventData {
         return days;
     }
 
+    /**
+     * 关键字匹配范围：名称、地区、状态、类型，以及日期的多种写法。
+     *
+     * <p>日期不能只比原始文本——服务端给的是 {@code 2026/2/13}，
+     * 用户会输「2月13」「2/13」「13日」，这些都得能搜到。
+     */
     private static boolean matches(Event event, String query) {
-        return event.name().toLowerCase(Locale.ROOT).contains(query)
-                || event.region().toLowerCase(Locale.ROOT).contains(query)
-                || event.status().label().toLowerCase(Locale.ROOT).contains(query)
-                || event.category().key().toLowerCase(Locale.ROOT).contains(query)
-                || event.date().raw().toLowerCase(Locale.ROOT).contains(query);
+        if (contains(event.name(), query)
+                || contains(event.region(), query)
+                || contains(event.status().label(), query)
+                || contains(event.category().key(), query)
+                || contains(event.date().raw(), query)) {
+            return true;
+        }
+        return matchesDate(event.date(), query);
+    }
+
+    private static boolean matchesDate(EventDate date, String query) {
+        if (!date.isResolved()) {
+            return false;
+        }
+        int month = date.month();
+        int day = date.day();
+        String[] forms = {
+                month + "月" + day + "日",
+                month + "月",
+                month + "/" + day,
+                month + "-" + day,
+                month + "." + day,
+                day + "日"
+        };
+        for (String form : forms) {
+            if (form.contains(query)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean contains(String value, String query) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(query);
     }
 }

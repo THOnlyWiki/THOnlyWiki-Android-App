@@ -8,7 +8,7 @@
     <string name="tab_list">速查表</string>
     <string name="tab_calendar">日历</string>
 
-    <string name="search_hint">搜索活动、地区或状态</string>
+    <string name="search_hint">搜索名称、地区或日期</string>
     <string name="empty_list">没有匹配的活动</string>
     <string name="empty_day">这天没有活动</string>
     <string name="loading">加载中…</string>
