@@ -141,6 +141,13 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
+        listController.setOnSessionExpired(new Runnable() {
+            @Override
+            public void run() {
+                // 服务端说会话失效：按退出登录处理，收回编辑入口和云端导航
+                onSessionChanged();
+            }
+        });
         calendarController = new CalendarController(this, calendarPage, store, actions);
         webController = new WebController(this, webPage);
         loginController = new LoginController(this, loginPage, session, this);

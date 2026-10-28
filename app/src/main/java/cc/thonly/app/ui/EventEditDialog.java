@@ -11,6 +11,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,9 @@ public final class EventEditDialog {
 
     public interface Listener {
         void onSaved();
+
+        /** 服务端说会话已失效，本地登录态需要清掉 */
+        void onSessionExpired();
     }
 
     private static final String DATE_NONE = "暂无";
@@ -262,6 +266,14 @@ public final class EventEditDialog {
         if (result.isSuccess()) {
             dialog.dismiss();
             listener.onSaved();
+            return;
+        }
+        // 服务端说没登录 = 会话已经失效（超时或服务端重启），本地登录态得清掉
+        if (result.message() != null && result.message().contains("登录")) {
+            dialog.dismiss();
+            editor.clearSession();
+            Toast.makeText(activity, R.string.session_expired, Toast.LENGTH_LONG).show();
+            listener.onSessionExpired();
             return;
         }
         setIdle();

@@ -50,6 +50,8 @@ public final class ListController implements EventStore.Listener {
     private List<String> regions = new ArrayList<String>();
     /** 点了「今天」但数据还没加载回来时置位，加载完成后滚动 */
     private boolean pendingScrollToToday;
+    /** 会话失效时的回调，由 MainActivity 注入（清登录态、收回编辑入口） */
+    private Runnable sessionExpiredHandler;
     /** 编辑模式：点条目打开编辑弹窗，右上角出现「新增」 */
     private boolean editMode;
 
@@ -73,6 +75,13 @@ public final class ListController implements EventStore.Listener {
             public void onSaved() {
                 // 增删改之后强制拉一次，别让本地存档盖住服务端的结果
                 store.load(selectedYear, true);
+            }
+
+            @Override
+            public void onSessionExpired() {
+                if (sessionExpiredHandler != null) {
+                    sessionExpiredHandler.run();
+                }
             }
         });
 
@@ -346,6 +355,10 @@ public final class ListController implements EventStore.Listener {
             updateEditUi();
             applyFilter();
         }
+    }
+
+    public void setOnSessionExpired(Runnable handler) {
+        this.sessionExpiredHandler = handler;
     }
 
     private void toggleEditMode() {

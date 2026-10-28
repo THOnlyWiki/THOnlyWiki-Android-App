@@ -135,7 +135,7 @@ public final class LoginController {
     /** 退出登录：清本地会话与 WebView Cookie，抽屉会跟着变回「登录/注册」 */
     public void logout() {
         session.clear();
-        CookieBridge.clear(activity);
+        CookieBridge.clear();
         render();
         Toast.makeText(activity, R.string.auth_logged_out, Toast.LENGTH_SHORT).show();
         host.onSessionChanged();

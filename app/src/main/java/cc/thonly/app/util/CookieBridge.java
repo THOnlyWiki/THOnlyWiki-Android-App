@@ -26,9 +26,20 @@ public final class CookieBridge {
         manager.flush();
     }
 
-    public static void clear(Context context) {
+    public static void clear() {
         CookieManager manager = CookieManager.getInstance();
         manager.removeAllCookies(null);
         manager.flush();
+    }
+
+    /**
+     * 当前对站点的 Cookie，以 WebView 的 CookieManager 为准。
+     *
+     * <p>登录时我们把 Cookie 存进了 SharedPreferences，但网页加载过程中服务端可能换发新会话，
+     * 那份存档就过期了。写接口要用这里取的最新值。
+     */
+    public static String current() {
+        String cookie = CookieManager.getInstance().getCookie(AppConfig.BASE_URL);
+        return cookie == null ? "" : cookie;
     }
 }

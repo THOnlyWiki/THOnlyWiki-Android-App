@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import cc.thonly.app.AppConfig;
+import cc.thonly.app.util.AppLog;
+import cc.thonly.app.util.CookieBridge;
 import cc.thonly.app.util.FormPost;
 
 /**
@@ -50,6 +52,21 @@ public final class ActivityEditor {
     }
 
     /**
+     * 写接口用的 Cookie：优先取 WebView 的实时值，取不到再退回登录时存的。
+     *
+     * <p>两份 Cookie 会漂移——登录后逛主站，服务端可能换发新会话，
+     * CookieManager 更新了而 SharedPreferences 里那份还是旧的，
+     * 拿旧的去写接口就会得到「请先登录」。
+     */
+    private String cookieHeader() {
+        String live = CookieBridge.current();
+        if (!live.isEmpty()) {
+            return live;
+        }
+        return session.cookies();
+    }
+
+    /**
      * @param id 为空表示新增，非空表示改这一条
      */
     public Result save(int year, String id, EventCategory category, String status, String name,
@@ -77,21 +94,43 @@ public final class ActivityEditor {
         return submit("/delete", form, "deleted");
     }
 
+    /**
+     * 服务端说没登录时调用：清掉本地登录态。
+     *
+     * <p>本地会话没有过期时间，服务端会话超时或重启后，
+     * App 会一直以为自己还登录着，直到写接口被拒。
+     */
+    public void clearSession() {
+        session.clear();
+        CookieBridge.clear();
+    }
+
     private Result submit(String path, Map<String, String> form, String successKey)
             throws EventApiException {
         try {
+            String cookie = cookieHeader();
             FormPost.Response response = FormPost.post(
-                    AppConfig.ACTIVITY_API + path, form, session.cookies());
+                    AppConfig.ACTIVITY_API + path, form, cookie);
             JSONObject root = new JSONObject(response.body());
             boolean success = root.optBoolean(successKey, false);
             String message = root.optString("message", "");
-            if (!success && message.isEmpty()) {
-                message = "操作失败，请稍后再试";
+            if (!success) {
+                // 排查用：记录服务端原话和这次带的 Cookie 长度（不记内容）
+                AppLog.e("api", path + " 失败: " + message
+                        + " (HTTP " + response.status()
+                        + ", cookie 长度 " + cookie.length() + ")", null);
+                if (message.isEmpty()) {
+                    message = "操作失败，请稍后再试";
+                }
+            } else {
+                AppLog.i("api", path + " 成功");
             }
             return new Result(success, message);
         } catch (IOException e) {
+            AppLog.e("api", path + " 网络异常", e);
             throw new EventApiException("网络请求失败", e);
         } catch (JSONException e) {
+            AppLog.e("api", path + " 返回不是 JSON", e);
             return new Result(false, "服务器返回了无法识别的内容");
         }
     }

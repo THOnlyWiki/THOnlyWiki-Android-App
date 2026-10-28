@@ -121,6 +121,7 @@
     <string name="settings_export_log_empty">还没有日志，用一会儿再来导出</string>
     <string name="settings_export_log_chooser">分享日志文件</string>
     <string name="toast_no_share_app">没有可以分享的应用</string>
+    <string name="session_expired">登录状态已失效，请重新登录后再编辑</string>
     <string name="settings_about">东方Project线下活动维基 %1$s\n开发者：稀神灵梦\nthonly.cc 官方客户端</string>
 
     <string name="update_checking">正在检查更新…</string>
