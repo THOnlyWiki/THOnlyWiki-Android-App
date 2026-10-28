@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TreeSet;
 
 /** 某一年的活动集合，构造时即完成排序，对外只读。 */
 public final class EventData {
@@ -82,27 +83,52 @@ public final class EventData {
         return result;
     }
 
-    public List<Event> eventsOn(int month, int day) {
+    /** 该年出现过的地区，按名称排序，供日历页的地区筛选使用 */
+    public List<String> regions() {
+        Set<String> regions = new TreeSet<String>();
+        for (Event event : events) {
+            if (!event.region().isEmpty()) {
+                regions.add(event.region());
+            }
+        }
+        return new ArrayList<String>(regions);
+    }
+
+    /**
+     * @param region null 或空串表示不限地区
+     */
+    public List<Event> eventsOn(int month, int day, String region) {
         List<Event> result = new ArrayList<Event>();
         for (Event event : events) {
             if (event.date().isResolved()
                     && event.date().month() == month
-                    && event.date().day() == day) {
+                    && event.date().day() == day
+                    && matchesRegion(event, region)) {
                 result.add(event);
             }
         }
         return result;
     }
 
-    /** 该月有活动的日期集合，用于月历上的圆点 */
-    public Set<Integer> markedDaysOf(int month) {
+    /**
+     * 该月有活动的日期集合，用于月历上的圆点。
+     *
+     * @param region null 或空串表示不限地区
+     */
+    public Set<Integer> markedDaysOf(int month, String region) {
         Set<Integer> days = new HashSet<Integer>();
         for (Event event : events) {
-            if (event.date().isResolved() && event.date().month() == month) {
+            if (event.date().isResolved()
+                    && event.date().month() == month
+                    && matchesRegion(event, region)) {
                 days.add(event.date().day());
             }
         }
         return days;
+    }
+
+    private static boolean matchesRegion(Event event, String region) {
+        return region == null || region.isEmpty() || region.equals(event.region());
     }
 
     /**

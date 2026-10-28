@@ -56,6 +56,17 @@
             android:textSize="13sp" />
     </LinearLayout>
 
+    <Spinner
+        android:id="@+id/regionSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_search"
+        android:popupBackground="@color/page_bg"
+        android:spinnerMode="dropdown" />
+
     <cc.thonly.app.ui.MonthView
         android:id="@+id/monthView"
         android:layout_width="match_parent"
