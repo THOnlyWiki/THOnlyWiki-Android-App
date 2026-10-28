@@ -229,14 +229,15 @@ App 打开站内页面时，会在**主文档到达渲染器之前**把样式插
 所以首帧就是最终效果，不会出现「先显示完整页面再收起」的跳动。
 
 ```css
-#p-banner, .mdui-ripple { display: none !important; }
+#p-banner, #site-navigation .mdui-ripple { display: none !important; }
 ```
 
 - `#p-banner` —— 顶部那条 750×80 的 wordmark 图
-- `.mdui-ripple` —— 站点的水波纹工具类，挂在侧栏 logo、`#header-upload`（上传）、
-  `#header-search-button`（搜索按钮）上，隐藏它这些图标一起去掉，搜索框本身保留
+- `#site-navigation .mdui-ripple` —— 侧栏导航里的水波纹元素（即侧栏 logo）
 
-站长确认过这个取舍：工具栏上的图标不要，但搜索框要留。
+**`.mdui-ripple` 是站点的通用组件**，顶部工具栏的 `#header-upload`、
+`#header-search-button` 也带这个类，所以必须限定在 `#site-navigation` 里面，
+否则会把上传、搜索按钮一起干掉。
 
 ## 七、活动增删改（App 端）
 
