@@ -3,21 +3,13 @@ package cc.thonly.app.data;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import cc.thonly.app.AppConfig;
+import cc.thonly.app.util.FormPost;
 
 /**
  * 登录 / 注册接口。
@@ -88,34 +80,11 @@ public final class AuthApi {
     }
 
     private Result submit(String path, Map<String, String> form) throws EventApiException {
-        HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(AppConfig.BASE_URL + path).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setConnectTimeout(AppConfig.CONNECT_TIMEOUT_MS);
-            connection.setReadTimeout(AppConfig.READ_TIMEOUT_MS);
-            connection.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded; charset=UTF-8");
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("X-Requested-With", "XMLHttpRequest");
-            connection.setRequestProperty("User-Agent", AppConfig.USER_AGENT);
-
-            OutputStream output = connection.getOutputStream();
-            output.write(buildBody(form).getBytes(StandardCharsets.UTF_8));
-            output.close();
-
-            int status = connection.getResponseCode();
-            String body = readAll(status < 400
-                    ? connection.getInputStream()
-                    : connection.getErrorStream());
-            return parse(body, readCookies(connection));
+            FormPost.Response response = FormPost.post(AppConfig.BASE_URL + path, form, null);
+            return parse(response.body(), response.cookies());
         } catch (IOException e) {
             throw new EventApiException("网络请求失败", e);
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
     }
 
@@ -134,51 +103,5 @@ public final class AuthApi {
         } catch (JSONException e) {
             return new Result(false, "服务器返回了无法识别的内容", "", cookies);
         }
-    }
-
-    /** 只取 {@code name=value} 部分，属性（Path/HttpOnly/…）交给 WebView 自己补 */
-    private static List<String> readCookies(HttpURLConnection connection) {
-        List<String> cookies = new ArrayList<String>();
-        for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
-            if (entry.getKey() == null || !"Set-Cookie".equalsIgnoreCase(entry.getKey())) {
-                continue;
-            }
-            for (String raw : entry.getValue()) {
-                String pair = raw.split(";", 2)[0].trim();
-                if (pair.indexOf('=') > 0) {
-                    cookies.add(pair);
-                }
-            }
-        }
-        return cookies;
-    }
-
-    private static String buildBody(Map<String, String> form) throws IOException {
-        StringBuilder body = new StringBuilder();
-        for (Map.Entry<String, String> entry : form.entrySet()) {
-            if (body.length() > 0) {
-                body.append('&');
-            }
-            body.append(URLEncoder.encode(entry.getKey(), "UTF-8"))
-                    .append('=')
-                    .append(URLEncoder.encode(entry.getValue(), "UTF-8"));
-        }
-        return body.toString();
-    }
-
-    private static String readAll(InputStream stream) throws IOException {
-        if (stream == null) {
-            return "";
-        }
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8));
-        StringBuilder builder = new StringBuilder();
-        char[] buffer = new char[4096];
-        int count;
-        while ((count = reader.read(buffer)) != -1) {
-            builder.append(buffer, 0, count);
-        }
-        reader.close();
-        return builder.toString();
     }
 }

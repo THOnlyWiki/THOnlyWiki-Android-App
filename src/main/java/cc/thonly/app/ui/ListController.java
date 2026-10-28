@@ -15,6 +15,7 @@ import java.util.Calendar;
 import java.util.List;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.ActivityEditor;
 import cc.thonly.app.data.Event;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventCategory;
@@ -33,7 +34,11 @@ public final class ListController implements EventStore.Listener {
     private final Spinner categorySpinner;
     private final TextView countLabel;
     private final TextView emptyLabel;
+    private final TextView editToggle;
+    private final TextView addButton;
     private final ListView listView;
+    private final EventInteraction hostInteraction;
+    private final EventEditDialog editDialog;
 
     /** null 表示不限类型 */
     private EventCategory categoryFilter;
@@ -42,26 +47,64 @@ public final class ListController implements EventStore.Listener {
     private List<Integer> availableYears = new ArrayList<Integer>();
     /** 点了「今天」但数据还没加载回来时置位，加载完成后滚动 */
     private boolean pendingScrollToToday;
+    /** 编辑模式：点条目打开编辑弹窗，右上角出现「新增」 */
+    private boolean editMode;
 
-    public ListController(Activity activity, View root, EventStore store, EventInteraction interaction) {
+    public ListController(Activity activity, View root, EventStore store, EventInteraction interaction,
+                          ActivityEditor editor) {
         this.activity = activity;
         this.store = store;
+        this.hostInteraction = interaction;
         this.adapter = new EventAdapter(activity, interaction);
         this.searchInput = root.findViewById(R.id.search);
         this.yearSpinner = root.findViewById(R.id.yearSpinner);
         this.categorySpinner = root.findViewById(R.id.categorySpinner);
         this.countLabel = root.findViewById(R.id.listCount);
         this.emptyLabel = root.findViewById(R.id.listEmpty);
+        this.editToggle = root.findViewById(R.id.editToggle);
+        this.addButton = root.findViewById(R.id.addButton);
         this.selectedYear = Calendar.getInstance().get(Calendar.YEAR);
+        this.editDialog = new EventEditDialog(activity, editor, new EventEditDialog.Listener() {
+            @Override
+            public void onSaved() {
+                // 增删改之后强制拉一次，别让本地存档盖住服务端的结果
+                store.load(selectedYear, true);
+            }
+        });
 
         ListView listView = root.findViewById(R.id.listView);
         listView.setAdapter(adapter);
         this.listView = listView;
 
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Event event = adapter.getItem(position);
+                if (editMode) {
+                    editDialog.show(selectedYear, event);
+                } else {
+                    hostInteraction.onEventSelected(event);
+                }
+            }
+        });
+
         root.findViewById(R.id.jumpToday).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 jumpToNow();
+            }
+        });
+
+        editToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleEditMode();
+            }
+        });
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editDialog.show(selectedYear, null);
             }
         });
 
@@ -227,7 +270,39 @@ public final class ListController implements EventStore.Listener {
         }
         List<Event> events = data.filter(categoryFilter, keyword);
         adapter.submit(events);
-        countLabel.setText(activity.getString(R.string.count_in_year, selectedYear, events.size()));
+        updateCountLabel(events.size());
         emptyLabel.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateCountLabel(int count) {
+        if (editMode) {
+            countLabel.setText(R.string.edit_mode_hint);
+        } else {
+            countLabel.setText(activity.getString(R.string.count_in_year, selectedYear, count));
+        }
+    }
+
+    // ------------------------------------------------------------ 编辑模式
+
+    /** 登录后才出现「编辑」入口；退出登录时自动退出编辑模式 */
+    public void setLoggedIn(boolean loggedIn) {
+        editToggle.setVisibility(loggedIn ? View.VISIBLE : View.GONE);
+        if (!loggedIn && editMode) {
+            editMode = false;
+            updateEditUi();
+            applyFilter();
+        }
+    }
+
+    private void toggleEditMode() {
+        editMode = !editMode;
+        updateEditUi();
+        applyFilter();
+    }
+
+    private void updateEditUi() {
+        editToggle.setText(editMode ? R.string.edit_done : R.string.edit_entry);
+        addButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        adapter.setEditMode(editMode);
     }
 }

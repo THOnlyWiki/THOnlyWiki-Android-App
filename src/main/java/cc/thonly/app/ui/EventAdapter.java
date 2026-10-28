@@ -19,10 +19,20 @@ public final class EventAdapter extends BaseAdapter {
     private final Context context;
     private final EventInteraction interaction;
     private final List<Event> items = new ArrayList<Event>();
+    /** 编辑模式下整行都是「修改」入口，右侧的「＋日历」先收起来免得误触 */
+    private boolean editMode;
 
     public EventAdapter(Context context, EventInteraction interaction) {
         this.context = context;
         this.interaction = interaction;
+    }
+
+    public void setEditMode(boolean editMode) {
+        if (this.editMode == editMode) {
+            return;
+        }
+        this.editMode = editMode;
+        notifyDataSetChanged();
     }
 
     public void submit(List<Event> events) {
@@ -88,7 +98,7 @@ public final class EventAdapter extends BaseAdapter {
             metaView.setText(buildMeta(event));
             statusBar.setBackgroundColor(context.getColor(event.status().colorRes()));
 
-            actionView.setVisibility(event.hasIcsFile() ? View.VISIBLE : View.GONE);
+            actionView.setVisibility(!editMode && event.hasIcsFile() ? View.VISIBLE : View.GONE);
             actionView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

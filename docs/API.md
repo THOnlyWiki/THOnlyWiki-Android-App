@@ -233,3 +233,34 @@ App 打开网页时会注入一段 CSS，隐藏站点自带的导航外壳：
 
 保留 `#mw-header-container` 里的搜索框。**不要用 `.mdui-ripple` 做选择器**——
 它还挂在搜索按钮和上传按钮上，会一起被隐藏。
+
+## 七、活动增删改（App 端）
+
+与网页表格 `activity.js` 用的是同一套接口，表单编码，登录态靠 Cookie，
+服务端另外校验 `edit` 权限（`/years` 里的 `canEdit`）。
+
+### POST /api/thonly-activity/save
+
+| 字段 | 说明 |
+|---|---|
+| `year` | 目标年份 |
+| `id` | 空表示新增，非空表示改这一条 |
+| `category` | `tho` / `thp` / `school` / `live` / `other` |
+| `status` | `计划` / `定档` / `如期` / `延期` / `取消` |
+| `name` | 名称，不能为空 |
+| `region` | 地区，可空 |
+| `date` | `2026/2/13` 这种写法；日期未定时传 `暂无` |
+| `qq` | QQ 群号，可空 |
+| `comment` | 写进变更历史的备注 |
+
+成功：`{"saved": true, ...}`；失败：`{"message": "..."}`。
+
+### POST /api/thonly-activity/delete
+
+`year`、`id`、`comment`。成功返回 `{"deleted": true, ...}`。
+
+### 客户端约定
+
+- 写成功后必须 `forceRefresh` 重新拉取，否则会被本地离线存档盖住
+- 未登录不显示编辑入口；退出登录时自动退出编辑模式
+- 保存失败不关闭弹窗，直接把服务端 `message` 显示在弹窗里

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.ActivityEditor;
 import cc.thonly.app.data.AppSidebar;
 import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.EventApiException;
@@ -131,7 +132,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(settingsPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage, settingsPage};
 
-        listController = new ListController(this, listPage, store, actions);
+        listController = new ListController(this, listPage, store, actions,
+                new ActivityEditor(session));
         calendarController = new CalendarController(this, calendarPage, store, actions);
         webController = new WebController(this, webPage);
         loginController = new LoginController(this, loginPage, session, this);
@@ -154,6 +156,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         bindDrawer();
 
         selectPage(PAGE_LIST);
+        listController.setLoggedIn(session.isLoggedIn());
         store.load(currentYear(), false);
         checkUpdateOnStart();
         loadRemoteSidebar();
@@ -261,6 +264,11 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     // ------------------------------------------------------------ 云端抽屉配置
 
     private void loadRemoteSidebar() {
+        // 云端抽屉只给登录用户下发，未登录就用内置导航
+        if (!session.isLoggedIn()) {
+            renderSidebar(AppSidebar.empty());
+            return;
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -465,6 +473,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     @Override
     public void onAuthenticated() {
         updateAuthUi();
+        listController.setLoggedIn(true);
+        loadRemoteSidebar();
         // 先刷新（没加载过就会直接打开首页），再切过去，避免重复请求
         webController.reload();
         selectPage(PAGE_WEB);
@@ -473,6 +483,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     @Override
     public void onSessionChanged() {
         updateAuthUi();
+        listController.setLoggedIn(false);
+        // 退出登录后云端导航一并收回
+        renderSidebar(AppSidebar.empty());
         webController.reload();
     }
 

@@ -2,6 +2,7 @@ package cc.thonly.app.ui;
 
 import android.app.Activity;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -51,6 +52,12 @@ public final class CalendarController implements EventStore.Listener, MonthView.
         ListView dayList = root.findViewById(R.id.dayList);
         dayList.setAdapter(adapter);
         this.dayList = dayList;
+        dayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                interaction.onEventSelected(adapter.getItem(position));
+            }
+        });
 
         Calendar now = Calendar.getInstance();
         year = now.get(Calendar.YEAR);

@@ -6,6 +6,13 @@
         <item name="android:statusBarColor">@color/tabbar_bg</item>
         <item name="android:navigationBarColor">@color/tabbar_bg</item>
         <item name="android:windowLightStatusBar">true</item>
+        <!-- 弹窗底色默认会被系统主题按强调色染色，这里显式指定 -->
+        <item name="android:alertDialogTheme">@style/AppDialogTheme</item>
+    </style>
+
+    <style name="AppDialogTheme" parent="@android:style/Theme.DeviceDefault.Light.Dialog.Alert">
+        <item name="android:colorBackgroundFloating">@color/page_bg</item>
+        <item name="android:colorBackground">@color/page_bg</item>
     </style>
 
     <style name="NavItem">
