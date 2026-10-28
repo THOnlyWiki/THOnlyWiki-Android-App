@@ -94,6 +94,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private TextView navLoginItem;
     private TextView navRegisterItem;
     private TextView navLogoutItem;
+    private TextView navToolboxItem;
     private TextView accountLabel;
 
     /** 固定行（内置 + 系统）与动态行分开存，动态行每次重新下发时重建 */
@@ -262,6 +263,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         navLoginItem = findViewById(R.id.navLogin);
         navRegisterItem = findViewById(R.id.navRegister);
         navLogoutItem = findViewById(R.id.navLogout);
+        navToolboxItem = findViewById(R.id.navToolbox);
         accountLabel = findViewById(R.id.accountLabel);
         navLogoutItem.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -344,20 +346,28 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         if (sidebar.isEmpty()) {
             // 没配置、配置坏了、或 App 版本低于 min_app_version —— 用内置导航
             navBuiltIn.setVisibility(View.VISIBLE);
+            navToolboxItem.setVisibility(View.VISIBLE);
             updateNavHighlight();
             return;
         }
 
         navBuiltIn.setVisibility(sidebar.isReplaceBuiltIn() ? View.GONE : View.VISIBLE);
 
+        boolean toolboxInConfig = false;
         for (AppSidebar.Section section : sidebar.sections()) {
             if (!section.title().isEmpty()) {
                 navDynamic.addView(createSectionTitle(section.title()));
             }
             for (AppSidebar.Item item : section.items()) {
                 navDynamic.addView(createNavRow(item));
+                if (item.target() == AppSidebar.Target.APP
+                        && pageIdOf(item.page()) == PAGE_TOOLBOX) {
+                    toolboxInConfig = true;
+                }
             }
         }
+        // 云端已经给了「百宝箱」入口就不再显示固定的那个，避免出现两个
+        navToolboxItem.setVisibility(toolboxInConfig ? View.GONE : View.VISIBLE);
         updateNavHighlight();
     }
 
@@ -425,6 +435,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         }
         if ("settings".equals(page)) {
             return PAGE_SETTINGS;
+        }
+        if ("toolbox".equals(page)) {
+            return PAGE_TOOLBOX;
         }
         return PAGE_NONE;
     }

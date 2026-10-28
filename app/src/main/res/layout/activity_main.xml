@@ -159,11 +159,6 @@
                         android:id="@+id/navCalendar"
                         style="@style/NavItem"
                         android:text="@string/tab_calendar" />
-
-                    <TextView
-                        android:id="@+id/navToolbox"
-                        style="@style/NavItem"
-                        android:text="@string/nav_toolbox" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -196,6 +191,11 @@
                     style="@style/NavItem"
                     android:text="@string/auth_logout"
                     android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/navToolbox"
+                    style="@style/NavItem"
+                    android:text="@string/nav_toolbox" />
 
                 <TextView
                     android:id="@+id/navSettings"
