@@ -4,6 +4,8 @@
     <color name="tabbar_bg">#FFFFFFFF</color>
     <color name="divider">#14000000</color>
     <color name="scrim">#66000000</color>
+    <color name="banner_bg">#FFF4E5</color>
+    <color name="banner_text">#854F0B</color>
 
     <color name="text_primary">#2C2C2A</color>
     <color name="text_secondary">#888780</color>

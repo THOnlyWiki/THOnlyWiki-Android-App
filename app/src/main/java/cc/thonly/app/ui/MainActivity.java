@@ -10,10 +10,15 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import cc.thonly.app.R;
 import cc.thonly.app.data.AppVersion;
+import cc.thonly.app.data.EventApiException;
+import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
 import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
@@ -24,14 +29,17 @@ import cc.thonly.app.util.FileCache;
  * 应用入口，只负责装配：数据仓库、各页面控制器、右侧导航抽屉、启动时检查更新。
  * 具体业务都在各自的 Controller 里。
  */
-public final class MainActivity extends Activity {
+public final class MainActivity extends Activity implements EventStore.Listener {
 
     private static final int PAGE_LIST = 0;
     private static final int PAGE_CALENDAR = 1;
     private static final int PAGE_SETTINGS = 2;
 
+    /** 存档放在 filesDir，系统不会像 cacheDir 那样在空间紧张时清掉 */
     private static final String CACHE_DIR_NAME = "activity";
     private static final long DRAWER_ANIMATION_MS = 200L;
+    /** 存档超过这个年龄才提示「本地缓存」，太新的没必要打扰 */
+    private static final long STALE_HINT_MS = 60L * 60L * 1000L;
 
     private EventStore store;
     private EventActions actions;
@@ -47,6 +55,7 @@ public final class MainActivity extends Activity {
     private View[] pages;
     private View scrim;
     private View drawer;
+    private TextView offlineBanner;
     private TextView[] navItems;
 
     private int currentPage = PAGE_LIST;
@@ -61,7 +70,7 @@ public final class MainActivity extends Activity {
         settings = new SettingsStore(this);
         updateChecker = new UpdateChecker();
         currentVersion = resolveCurrentVersion();
-        cache = new FileCache(new File(getCacheDir(), CACHE_DIR_NAME));
+        cache = new FileCache(new File(getFilesDir(), CACHE_DIR_NAME));
         actions = new EventActions(this);
         store = new EventStore(new RemoteEventRepository(cache));
 
@@ -80,6 +89,15 @@ public final class MainActivity extends Activity {
                 updateChecker, currentVersion, cache);
         store.addListener(listController);
         store.addListener(calendarController);
+        store.addListener(this);
+
+        offlineBanner = findViewById(R.id.offlineBanner);
+        offlineBanner.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                store.reload();
+            }
+        });
 
         bindHeader();
         bindDrawer();
@@ -235,6 +253,39 @@ public final class MainActivity extends Activity {
         return Calendar.getInstance().get(Calendar.YEAR);
     }
 
+    // ------------------------------------------------------------ 数据状态
+
+    @Override
+    public void onLoadingStarted(int year) {
+        offlineBanner.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onDataLoaded(EventData data) {
+        updateStaleBanner();
+    }
+
+    @Override
+    public void onLoadFailed(int year, EventApiException error) {
+        // 失败提示由列表页负责，这里不重复打扰
+    }
+
+    /** 用的是本地存档、且存档已经有点旧时，顶部提示一下，避免用户以为是最新的 */
+    private void updateStaleBanner() {
+        long updatedAt = store.lastUpdatedAt();
+        boolean stale = store.isFromCache()
+                && updatedAt > 0
+                && System.currentTimeMillis() - updatedAt > STALE_HINT_MS;
+        if (!stale) {
+            offlineBanner.setVisibility(View.GONE);
+            return;
+        }
+        String time = new SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+                .format(new Date(updatedAt));
+        offlineBanner.setText(getString(R.string.offline_banner, time));
+        offlineBanner.setVisibility(View.VISIBLE);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -260,6 +311,7 @@ public final class MainActivity extends Activity {
     protected void onDestroy() {
         store.removeListener(listController);
         store.removeListener(calendarController);
+        store.removeListener(this);
         store.shutdown();
         super.onDestroy();
     }

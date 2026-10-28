@@ -7,5 +7,5 @@ public interface EventRepository {
      * @param year         年份
      * @param forceRefresh true 时忽略缓存，强制走网络
      */
-    EventData load(int year, boolean forceRefresh) throws EventApiException;
+    LoadResult load(int year, boolean forceRefresh) throws EventApiException;
 }

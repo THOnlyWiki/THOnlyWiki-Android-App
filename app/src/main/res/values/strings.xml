@@ -50,7 +50,8 @@
     <string name="toast_no_calendar_app">手机里没有找到日历应用</string>
     <string name="toast_no_permission">没有存储权限，无法保存 .ics 文件</string>
     <string name="toast_no_browser">没有可以打开链接的浏览器</string>
-    <string name="toast_cache_cleared">本地缓存已清除</string>
+    <string name="toast_cache_cleared">离线存档已清除</string>
+    <string name="offline_banner">本地存档 · 更新于 %1$s · 点此刷新</string>
 
     <string name="nav_settings">设置</string>
     <string name="settings_group_update">更新</string>
@@ -58,7 +59,7 @@
     <string name="settings_auto_check">自动检查更新</string>
     <string name="settings_group_about">关于</string>
     <string name="settings_download">前往官网下载最新版</string>
-    <string name="settings_clear_cache">清除本地缓存</string>
+    <string name="settings_clear_cache">清除离线存档</string>
     <string name="settings_about">东方Project线下活动日程 %1$s\nthonly.cc（东方Project线下活动维基）官方客户端</string>
 
     <string name="update_checking">正在检查更新…</string>

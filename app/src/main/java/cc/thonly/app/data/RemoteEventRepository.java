@@ -18,13 +18,21 @@ import cc.thonly.app.util.HttpClient;
 /**
  * 走 HTTP 的仓库实现。
  *
- * <p>取数策略：先读缓存 → 缓存没有就请求网络 → 网络失败再退回缓存。
- * 这样弱网或断网时仍能看到上一次的数据。
+ * <p>取数策略（面向长期没网或服务端宕机的场景）：
+ * <ol>
+ *   <li>本地有存档且未过期 → 直接用存档，秒开</li>
+ *   <li>存档过期或不存在 → 请求网络，成功后立刻落盘</li>
+ *   <li>网络失败 → 退回任意一份存档（哪怕已过期），保证还有内容可看</li>
+ * </ol>
+ * 只有网络失败且完全没存档时才抛异常。
  */
 public final class RemoteEventRepository implements EventRepository {
 
     /** 除了服务端给的年份，再按手机时间往后延两年，避免跨年后年份条断档 */
     private static final int YEARS_AHEAD = 2;
+
+    /** 存档有效期：6 小时内不重复请求，过期后尝试更新一次 */
+    private static final long CACHE_TTL_MS = 6L * 60L * 60L * 1000L;
 
     private final FileCache cache;
 
@@ -33,25 +41,29 @@ public final class RemoteEventRepository implements EventRepository {
     }
 
     @Override
-    public EventData load(int year, boolean forceRefresh) throws EventApiException {
+    public LoadResult load(int year, boolean forceRefresh) throws EventApiException {
         String cacheKey = "activity-" + year + ".json";
-        String body = forceRefresh ? null : cache.read(cacheKey);
-        EventApiException networkError = null;
+        String cached = cache.read(cacheKey);
+        long cachedAt = cache.lastModified(cacheKey);
 
-        if (body == null) {
-            try {
-                body = HttpClient.getText(AppConfig.ACTIVITY_API + "/list?year=" + year);
-                cache.write(cacheKey, body);
-            } catch (IOException e) {
-                networkError = new EventApiException("请求活动数据失败", e);
-                body = cache.read(cacheKey);
+        boolean cacheFresh = !forceRefresh
+                && cached != null
+                && System.currentTimeMillis() - cachedAt < CACHE_TTL_MS;
+        if (cacheFresh) {
+            return new LoadResult(parse(year, cached), true, cachedAt);
+        }
+
+        try {
+            String body = HttpClient.getText(AppConfig.ACTIVITY_API + "/list?year=" + year);
+            cache.write(cacheKey, body);
+            return new LoadResult(parse(year, body), false, System.currentTimeMillis());
+        } catch (IOException networkError) {
+            // 网络不通：只要本地有存档就继续用，哪怕已经过期
+            if (cached != null) {
+                return new LoadResult(parse(year, cached), true, cachedAt);
             }
+            throw new EventApiException("请求活动数据失败", networkError);
         }
-
-        if (body == null) {
-            throw networkError != null ? networkError : new EventApiException("没有可用数据");
-        }
-        return parse(year, body);
     }
 
     private EventData parse(int requestedYear, String body) throws EventApiException {

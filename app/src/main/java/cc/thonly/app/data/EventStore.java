@@ -30,6 +30,8 @@ public final class EventStore {
     private final List<Listener> listeners = new ArrayList<Listener>();
 
     private EventData current = EventData.empty();
+    private boolean fromCache;
+    private long updatedAtMillis;
     private boolean loading;
     private int loadingYear;
     private int lastRequestedYear;
@@ -40,6 +42,16 @@ public final class EventStore {
 
     public EventData current() {
         return current;
+    }
+
+    /** 当前数据是否来自本地存档（说明这次没连上服务器） */
+    public boolean isFromCache() {
+        return fromCache;
+    }
+
+    /** 当前数据的落盘时间，0 表示未知 */
+    public long lastUpdatedAt() {
+        return updatedAtMillis;
     }
 
     public boolean isLoading() {
@@ -69,14 +81,16 @@ public final class EventStore {
             @Override
             public void run() {
                 try {
-                    final EventData data = repository.load(year, forceRefresh);
+                    final LoadResult result = repository.load(year, forceRefresh);
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             loading = false;
-                            current = data;
+                            current = result.data();
+                            fromCache = result.fromCache();
+                            updatedAtMillis = result.updatedAtMillis();
                             for (Listener listener : snapshot()) {
-                                listener.onDataLoaded(data);
+                                listener.onDataLoaded(current);
                             }
                         }
                     });

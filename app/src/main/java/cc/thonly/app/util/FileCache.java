@@ -65,6 +65,12 @@ public final class FileCache {
         return new File(directory, key);
     }
 
+    /** 缓存写入时间，0 表示不存在 */
+    public long lastModified(String key) {
+        File file = fileOf(key);
+        return file.exists() ? file.lastModified() : 0L;
+    }
+
     /** 清空缓存目录，设置页的「清除本地缓存」用 */
     public void clear() {
         deleteChildren(directory);
