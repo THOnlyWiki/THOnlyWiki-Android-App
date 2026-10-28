@@ -98,33 +98,23 @@ public final class EventData {
         return new ArrayList<String>(regions);
     }
 
-    /**
-     * @param region null 或空串表示不限地区
-     */
-    public List<Event> eventsOn(int month, int day, String region) {
+    public List<Event> eventsOn(int month, int day) {
         List<Event> result = new ArrayList<Event>();
         for (Event event : events) {
             if (event.date().isResolved()
                     && event.date().month() == month
-                    && event.date().day() == day
-                    && matchesRegion(event, region)) {
+                    && event.date().day() == day) {
                 result.add(event);
             }
         }
         return result;
     }
 
-    /**
-     * 该月有活动的日期集合，用于月历上的圆点。
-     *
-     * @param region null 或空串表示不限地区
-     */
-    public Set<Integer> markedDaysOf(int month, String region) {
+    /** 该月有活动的日期集合，用于月历上的圆点 */
+    public Set<Integer> markedDaysOf(int month) {
         Set<Integer> days = new HashSet<Integer>();
         for (Event event : events) {
-            if (event.date().isResolved()
-                    && event.date().month() == month
-                    && matchesRegion(event, region)) {
+            if (event.date().isResolved() && event.date().month() == month) {
                 days.add(event.date().day());
             }
         }
