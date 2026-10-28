@@ -67,12 +67,16 @@ public final class EventData {
     /**
      * @param category 传 null 表示不限类型
      * @param keyword  空字符串表示不筛选
+     * @param region   传 null 或空串表示不限地区
      */
-    public List<Event> filter(EventCategory category, String keyword) {
+    public List<Event> filter(EventCategory category, String keyword, String region) {
         String query = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
         List<Event> result = new ArrayList<Event>();
         for (Event event : events) {
             if (category != null && event.category() != category) {
+                continue;
+            }
+            if (!matchesRegion(event, region)) {
                 continue;
             }
             if (!query.isEmpty() && !matches(event, query)) {

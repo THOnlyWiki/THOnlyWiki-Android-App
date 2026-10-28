@@ -51,6 +51,17 @@
             android:spinnerMode="dropdown" />
     </LinearLayout>
 
+    <Spinner
+        android:id="@+id/regionSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_search"
+        android:popupBackground="@color/page_bg"
+        android:spinnerMode="dropdown" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

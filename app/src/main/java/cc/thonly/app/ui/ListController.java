@@ -32,6 +32,7 @@ public final class ListController implements EventStore.Listener {
     private final EditText searchInput;
     private final Spinner yearSpinner;
     private final Spinner categorySpinner;
+    private final Spinner regionSpinner;
     private final TextView countLabel;
     private final TextView emptyLabel;
     private final TextView editToggle;
@@ -45,6 +46,8 @@ public final class ListController implements EventStore.Listener {
     private String keyword = "";
     private int selectedYear;
     private List<Integer> availableYears = new ArrayList<Integer>();
+    /** 地区下拉的候选项，第 0 位是「全部地区」，不存在这里 */
+    private List<String> regions = new ArrayList<String>();
     /** 点了「今天」但数据还没加载回来时置位，加载完成后滚动 */
     private boolean pendingScrollToToday;
     /** 编辑模式：点条目打开编辑弹窗，右上角出现「新增」 */
@@ -59,6 +62,7 @@ public final class ListController implements EventStore.Listener {
         this.searchInput = root.findViewById(R.id.search);
         this.yearSpinner = root.findViewById(R.id.yearSpinner);
         this.categorySpinner = root.findViewById(R.id.categorySpinner);
+        this.regionSpinner = root.findViewById(R.id.regionSpinner);
         this.countLabel = root.findViewById(R.id.listCount);
         this.emptyLabel = root.findViewById(R.id.listEmpty);
         this.editToggle = root.findViewById(R.id.editToggle);
@@ -125,6 +129,7 @@ public final class ListController implements EventStore.Listener {
         });
 
         setupCategorySpinner();
+        setupRegionSpinner();
         renderYearSpinner();
     }
 
@@ -218,6 +223,54 @@ public final class ListController implements EventStore.Listener {
         });
     }
 
+    private void setupRegionSpinner() {
+        List<String> initial = new ArrayList<String>();
+        initial.add(activity.getString(R.string.region_all));
+        regionSpinner.setAdapter(new DropdownAdapter(activity, initial));
+        regionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // 选区就是唯一真相，重复回调只是重算一次，幂等
+                applyFilter();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
+    /**
+     * 地区选项来自当年数据。数据没变就不重建，
+     * 否则每次刷新都会把用户选中的项弹回默认值。
+     */
+    private void renderRegionSpinner(EventData data) {
+        List<String> values = data.regions();
+        if (values.equals(regions) && regionSpinner.getAdapter() != null) {
+            return;
+        }
+
+        String previous = selectedRegion();
+        regions = values;
+
+        List<String> labels = new ArrayList<String>();
+        labels.add(activity.getString(R.string.region_all));
+        labels.addAll(values);
+        regionSpinner.setAdapter(new DropdownAdapter(activity, labels));
+
+        int index = previous == null ? 0 : values.indexOf(previous) + 1;
+        regionSpinner.setSelection(Math.max(index, 0), false);
+    }
+
+    /** 当前选中的地区，null 表示「全部地区」 */
+    private String selectedRegion() {
+        int position = regionSpinner.getSelectedItemPosition();
+        if (position <= 0 || position - 1 >= regions.size()) {
+            return null;
+        }
+        return regions.get(position - 1);
+    }
+
     private void setCategoryFilter(EventCategory category) {
         categoryFilter = category;
         applyFilter();
@@ -240,7 +293,7 @@ public final class ListController implements EventStore.Listener {
         if (data == null) {
             return;
         }
-        List<Event> events = data.filter(categoryFilter, keyword);
+        List<Event> events = data.filter(categoryFilter, keyword, selectedRegion());
         if (events.isEmpty()) {
             return;
         }
@@ -268,7 +321,8 @@ public final class ListController implements EventStore.Listener {
         if (data == null) {
             return;
         }
-        List<Event> events = data.filter(categoryFilter, keyword);
+        renderRegionSpinner(data);
+        List<Event> events = data.filter(categoryFilter, keyword, selectedRegion());
         adapter.submit(events);
         updateCountLabel(events.size());
         emptyLabel.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
