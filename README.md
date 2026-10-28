@@ -1,4 +1,4 @@
-# 东方Project线下活动日程 · Android
+# 东方Project线下活动维基 · Android
 
 [thonly.cc](https://thonly.cc)（东方Project线下活动维基）的**官方安卓客户端**，与站点同源维护。
 
