@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">东方活动速查</string>
+
+    <string name="refresh">刷新</string>
+    <string name="tab_list">速查表</string>
+    <string name="tab_calendar">日历</string>
+
+    <string name="search_hint">搜索活动、地区或状态</string>
+    <string name="empty_list">没有匹配的活动</string>
+    <string name="empty_day">这天没有活动</string>
+    <string name="loading">加载中…</string>
+    <string name="load_failed_retry">加载失败，点这里重试</string>
+
+    <string name="category_all">全部</string>
+    <string name="category_tho">THO</string>
+    <string name="category_thp">THP</string>
+    <string name="category_school">校联</string>
+    <string name="category_live">Live</string>
+    <string name="category_other">活动</string>
+
+    <string name="count_in_year">%1$d 年 · %2$d 场</string>
+    <string name="month_title">%1$d 年 %2$d 月</string>
+    <string name="day_title">%1$d 月 %2$d 日 · %3$d 场</string>
+    <string name="date_month_day">%1$d 月 %2$d 日</string>
+    <string name="meta_line">%1$s · %2$s · %3$s</string>
+
+    <string name="unknown_date">日期待定</string>
+    <string name="unknown_region">地区待定</string>
+    <string name="value_unknown">待定</string>
+
+    <string name="detail_line">%1$s：%2$s</string>
+    <string name="label_date">日期</string>
+    <string name="label_region">地区</string>
+    <string name="label_category">类型</string>
+    <string name="label_status">状态</string>
+    <string name="label_qq">QQ 群</string>
+
+    <string name="dialog_close">关闭</string>
+    <string name="dialog_add_to_calendar">加入日历</string>
+    <string name="dialog_copy_qq">复制群号</string>
+    <string name="add_to_calendar">＋日历</string>
+
+    <string name="toast_copied">已复制 %1$s</string>
+    <string name="toast_download_started">已保存到「下载」目录，点通知即可加入日历</string>
+    <string name="toast_download_failed">下载失败，请稍后再试</string>
+    <string name="toast_no_ics">这场活动还没有日历文件</string>
+    <string name="toast_no_permission">没有存储权限，无法保存 .ics 文件</string>
+</resources>
