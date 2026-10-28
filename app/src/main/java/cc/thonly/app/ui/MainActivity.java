@@ -674,6 +674,11 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 webController.goBack();
                 return true;
             }
+            // 百宝箱里的功能页先退回百宝箱，而不是一路跳回列表
+            if (currentPage == PAGE_MUSIC) {
+                selectPage(PAGE_TOOLBOX);
+                return true;
+            }
             if (currentPage != PAGE_LIST) {
                 selectPage(PAGE_LIST);
                 return true;
