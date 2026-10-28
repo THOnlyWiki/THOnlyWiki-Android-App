@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application' version '9.4.1'
 }
 
+// 发布签名：同目录下有 keystore.properties 就用它，没有就退回 debug 签名，
+// 这样别人 clone 下来不配密钥也能直接构建。密钥文件不要入库（见 .gitignore）。
+def keystorePropertiesFile = file('keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace 'cc.thonly.app'
     compileSdk 35
@@ -15,14 +23,27 @@ android {
         resConfigs 'zh', 'en'
     }
 
+    if (keystorePropertiesFile.exists()) {
+        signingConfigs {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // 群内直装先用 debug 签名，能直接装。要长期维护请换成自己的 keystore，
-            // 见 README「签名」一节，否则换机器打包会导致无法覆盖安装。
-            signingConfig signingConfigs.debug
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
         }
     }
 

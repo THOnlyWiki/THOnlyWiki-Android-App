@@ -138,14 +138,44 @@ cd ..            # 回到 WikiKernel 根目录
 
 ## 签名
 
-默认用 debug 签名，编出来就能直接装、直接发群里。长期维护请换成自己的密钥，否则换台机器打包会导致无法覆盖安装：
+没配密钥时用 debug 签名，编出来能直接装、直接发群里；配了 `keystore.properties`
+就自动改用你自己的密钥（`app/build.gradle` 里按文件是否存在切换）。
+
+### 1. 生成密钥（只做一次）
 
 ```bash
 keytool -genkeypair -v -keystore release.jks -alias thonly \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-然后把 `build.gradle` 里的 `signingConfig signingConfigs.debug` 换成你自己的配置。
+会依次问密码和姓名/组织等信息，随便填。生成的 `release.jks` 放到 `app/` 目录下。
+
+> **密钥丢了就再也无法更新已发布的 App**（新包签名不一致，系统拒绝覆盖安装）。
+> 请把它和密码单独备份到别处，不要只放在这台电脑上。
+
+### 2. 配置
+
+```bash
+cp app/keystore.properties.example app/keystore.properties
+# 然后编辑 app/keystore.properties，填入密码
+```
+
+`keystore.properties`、`*.jks`、`*.keystore` 都在 `.gitignore` 里，不会入库。
+
+### 3. 验证
+
+```bash
+./gradlew :app:assembleRelease
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
+`DN:` 一行应该是你自己的名字，而不是 `CN=Android Debug`。
+
+### 注意：换签名会导致老用户装不上
+
+debug 签名和自有密钥是两套证书，**已经装了 debug 版的手机无法直接覆盖安装**，
+必须先卸载。所以如果测试版已经发出去过，换签名要么趁早（人少时让大家卸一次），
+要么等首次正式发布再换。
 
 ## 改服务器地址
 
