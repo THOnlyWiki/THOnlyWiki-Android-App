@@ -147,6 +147,8 @@
     <string name="checklist_new_item_hint">比如：应援棒、折叠伞、充电宝</string>
     <string name="checklist_item_invalid">名称重复或为空</string>
     <string name="checklist_remove">删除这一项</string>
+    <string name="checklist_hide">隐藏这一项</string>
+    <string name="checklist_restore">已隐藏 %1$d 项 · 点此恢复</string>
     <string name="fortune_footer">每天一签 · 明天再来</string>
     <string name="fortune_author">—— %1$s</string>
     <string name="fortune_unavailable">签文读取失败</string>

@@ -67,16 +67,21 @@ public final class ChecklistDialog {
                 .show();
     }
 
-    /** 内置条目在前、自定义在后，最后是「添加」入口 */
+    /** 内置条目在前、自定义在后，最后是「添加」入口和「恢复」提示 */
     private void rebuild() {
         container.removeAllViews();
         for (String item : presets) {
-            container.addView(createRow(item, false));
+            if (!checklist.isHidden(item)) {
+                container.addView(createRow(item, false));
+            }
         }
         for (String item : checklist.customItems()) {
             container.addView(createRow(item, true));
         }
         container.addView(createAddEntry());
+        if (checklist.hiddenCount() > 0) {
+            container.addView(createRestoreEntry(checklist.hiddenCount()));
+        }
     }
 
     private View createRow(final String item, boolean custom) {
@@ -114,8 +119,41 @@ public final class ChecklistDialog {
                 }
             });
             row.addView(remove);
+        } else {
+            // 内置条目只能隐藏，随时能恢复
+            TextView hide = new TextView(activity);
+            hide.setText("×");
+            hide.setTextColor(activity.getColor(R.color.text_tertiary));
+            hide.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            hide.setGravity(Gravity.CENTER);
+            hide.setPadding(dp(12), dp(8), dp(4), dp(8));
+            hide.setContentDescription(activity.getString(R.string.checklist_hide));
+            hide.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    checklist.hide(item);
+                    rebuild();
+                }
+            });
+            row.addView(hide);
         }
         return row;
+    }
+
+    private View createRestoreEntry(int hiddenCount) {
+        TextView restore = new TextView(activity);
+        restore.setText(activity.getString(R.string.checklist_restore, hiddenCount));
+        restore.setTextColor(activity.getColor(R.color.text_secondary));
+        restore.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        restore.setPadding(0, dp(6), 0, dp(6));
+        restore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checklist.unhideAll();
+                rebuild();
+            }
+        });
+        return restore;
     }
 
     private View createAddEntry() {

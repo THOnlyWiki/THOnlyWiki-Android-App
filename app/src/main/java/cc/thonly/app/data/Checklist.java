@@ -52,6 +52,7 @@ public final class Checklist {
 
     private static final String PREFS_NAME = "checklist";
     private static final String KEY_SUFFIX_CUSTOM = "_custom";
+    private static final String KEY_SUFFIX_HIDDEN = "_hidden";
 
     private final SharedPreferences preferences;
     private final String key;
@@ -63,8 +64,7 @@ public final class Checklist {
     }
 
     /** 用户自己加的条目，按名称排序 */
-    public java.util.List<String> customItems() {
-        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_CUSTOM, null);
+    public java.util.List<String> customItems() {        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_CUSTOM, null);
         java.util.List<String> items = new java.util.ArrayList<String>();
         if (stored != null) {
             items.addAll(stored);
@@ -90,6 +90,31 @@ public final class Checklist {
         next.remove(item);
         preferences.edit().putStringSet(key + KEY_SUFFIX_CUSTOM, next).apply();
         set(item, false);
+    }
+
+    /** 内置条目被隐藏的数量 */
+    public int hiddenCount() {
+        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);
+        return stored == null ? 0 : stored.size();
+    }
+
+    public boolean isHidden(String item) {
+        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);
+        return stored != null && stored.contains(item);
+    }
+
+    /** 隐藏一个内置条目（不是删除，随时可以恢复） */
+    public void hide(String item) {
+        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);
+        Set<String> next = stored == null ? new HashSet<String>() : new HashSet<String>(stored);
+        next.add(item);
+        preferences.edit().putStringSet(key + KEY_SUFFIX_HIDDEN, next).apply();
+        set(item, false);
+    }
+
+    /** 把隐藏的内置条目全部恢复 */
+    public void unhideAll() {
+        preferences.edit().remove(key + KEY_SUFFIX_HIDDEN).apply();
     }
 
     public boolean isChecked(String item) {
