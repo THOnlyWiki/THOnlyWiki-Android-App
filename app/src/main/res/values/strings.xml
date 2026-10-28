@@ -137,6 +137,16 @@
     <string name="tool_budget_desc">门票、交通、住宿加起来，按人数均摊</string>
     <string name="tool_fortune_title">今日签文</string>
     <string name="tool_fortune_desc">每天一签，同一天结果不变</string>
+    <string name="tool_packing_title">行前装备</string>
+    <string name="tool_packing_desc">出发前对着勾一遍，别落东西</string>
+    <string name="tool_cosplay_title">Cosplay 备忘</string>
+    <string name="tool_cosplay_desc">出 cos 才需要的那些零碎</string>
+    <string name="checklist_clear">全部取消</string>
+    <string name="checklist_add">＋ 添加一项</string>
+    <string name="checklist_new_item">新建条目</string>
+    <string name="checklist_new_item_hint">比如：应援棒、折叠伞、充电宝</string>
+    <string name="checklist_item_invalid">名称重复或为空</string>
+    <string name="checklist_remove">删除这一项</string>
     <string name="fortune_footer">每天一签 · 明天再来</string>
     <string name="fortune_author">—— %1$s</string>
     <string name="fortune_unavailable">签文读取失败</string>
