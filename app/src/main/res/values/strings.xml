@@ -135,10 +135,12 @@
     <string name="toolbox_group_tools">工具</string>
     <string name="tool_budget_title">预算分摊</string>
     <string name="tool_budget_desc">门票、交通、住宿加起来，按人数均摊</string>
-    <string name="budget_ticket">门票（元）</string>
-    <string name="budget_travel">交通（元）</string>
-    <string name="budget_hotel">住宿（元）</string>
-    <string name="budget_other">其他（元）</string>
+    <string name="budget_add_row">+ 添加费用项</string>
+    <string name="budget_amount">金额</string>
+    <string name="budget_remove_row">删除这一项</string>
+    <string name="budget_new_type">新建费用类型</string>
+    <string name="budget_new_type_hint">比如：摊位费、道具、快递</string>
+    <string name="budget_new_type_invalid">名称重复或为空</string>
     <string name="budget_people">人数</string>
     <string name="budget_result">合计 %1$s 元 · 人均 %2$s 元</string>
     <string name="budget_result_empty">填几项金额就能算出来</string>
