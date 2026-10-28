@@ -137,3 +137,51 @@ END:VCALENDAR
 - `/rest.php` 未启用（404）
 - `/.well-known/assetlinks.json` 被 Wiki 路由接管，返回的是维基页面而不是文件——如果要走 TWA 方案，需要先在 nginx/openresty 层把这个路径排除出重写规则
 - 首页 `302` 跳转到 `http://thonly.cc/首页`（明文），这是 `$wgServer` 配置成 http 导致的；客户端如果加载网页会踩到 cleartext 限制
+
+## 五、用户接口（登录 / 注册）
+
+App 的登录注册走的就是站点表单同一套接口，表单编码（`application/x-www-form-urlencoded`），
+返回 `{code, success, message, data}`。
+
+### POST /api/user/login
+
+| 字段 | 说明 |
+|---|---|
+| `username` | 用户名 |
+| `password` | 密码 |
+| `remember` | 可选，传 `1` 时下发 30 天的 `wiki_token` |
+
+成功：
+
+```
+HTTP/1.1 200
+Content-Type: application/json
+Set-Cookie: JSESSIONID=...; Path=/; HttpOnly; SameSite=Lax
+Set-Cookie: wiki_token=...; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax
+
+{"code":200,"success":true,"message":"登录成功",
+ "data":{"id":126,"username":"...","avatar":"","email":"","groups":...}}
+```
+
+失败：`{"code":500,"success":false,"message":"用户名或密码错误"}`（HTTP 仍是 200，要看 body 的 code）
+
+### POST /api/user/register
+
+| 字段 | 说明 |
+|---|---|
+| `username` | 用户名 |
+| `password` | 密码 |
+| `confirmPassword` | 确认密码 |
+| `email` | 可选 |
+| `timeZone` | 可选，`Asia/Shanghai` 这种 IANA 名称 |
+
+成功后同样下发 Cookie，等于注册即登录。
+
+### 页面地址
+
+- 登录：`/特殊:登录?returnto=...`
+- 注册：`/特殊:注册?returnto=...`
+
+站点自己在 `returnto` 里会带上 `open_reference=app`，说明这个参数是站点认可的来源标记。
+
+> 备注：联调时用 `__probe__` 探测注册接口，在站上真实创建了账号（id 126），需要在后台删除。

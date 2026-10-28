@@ -54,6 +54,33 @@
     <string name="offline_banner">本地存档 · 更新于 %1$s · 点此刷新</string>
 
     <string name="nav_settings">设置</string>
+    <string name="nav_web">主站</string>
+    <string name="nav_login">登录</string>
+    <string name="nav_register">注册</string>
+
+    <string name="auth_login">登录</string>
+    <string name="auth_register">注册</string>
+    <string name="auth_login_hint">登录后可以在主站编辑词条、评论、上传图片</string>
+    <string name="auth_register_hint">注册后即可参与维基编辑</string>
+    <string name="auth_username">用户名</string>
+    <string name="auth_password">密码</string>
+    <string name="auth_confirm_password">确认密码</string>
+    <string name="auth_email">邮箱（选填）</string>
+    <string name="auth_remember">记住登录</string>
+    <string name="auth_login_button">登录</string>
+    <string name="auth_register_button">注册</string>
+    <string name="auth_submitting">提交中…</string>
+    <string name="auth_go_register">还没有账号？去注册</string>
+    <string name="auth_go_login">已有账号？去登录</string>
+    <string name="auth_need_input">请填写用户名和密码</string>
+    <string name="auth_password_mismatch">两次输入的密码不一致</string>
+    <string name="auth_network_error">网络不可用，请稍后再试</string>
+    <string name="auth_login_success">登录成功</string>
+    <string name="auth_register_success">注册成功</string>
+    <string name="auth_logged_in_as">当前登录：%1$s</string>
+    <string name="auth_logout">退出登录</string>
+    <string name="auth_logged_out">已退出登录</string>
+    <string name="web_error">网页加载失败\n点此重试</string>
     <string name="settings_group_update">更新</string>
     <string name="settings_check_update">检查更新</string>
     <string name="settings_auto_check">自动检查更新</string>
