@@ -14,3 +14,6 @@ captures/
 keystore.properties
 _recon/
 output.json
+
+### WorkBuddy 本地工作数据，不入库 ###
+.workbuddy-ai/
