@@ -18,6 +18,12 @@ public final class ToolboxController {
                 BudgetDialog.show(activity);
             }
         });
+        root.findViewById(R.id.rowFortune).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FortuneDialog.show(activity);
+            }
+        });
     }
 
     public void onShown() {

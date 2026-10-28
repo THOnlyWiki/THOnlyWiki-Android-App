@@ -135,6 +135,11 @@
     <string name="toolbox_group_tools">工具</string>
     <string name="tool_budget_title">预算分摊</string>
     <string name="tool_budget_desc">门票、交通、住宿加起来，按人数均摊</string>
+    <string name="tool_fortune_title">今日签文</string>
+    <string name="tool_fortune_desc">每天一签，同一天结果不变</string>
+    <string name="fortune_footer">每天一签 · 明天再来</string>
+    <string name="fortune_author">—— %1$s</string>
+    <string name="fortune_unavailable">签文读取失败</string>
     <string name="budget_add_row">+ 添加费用项</string>
     <string name="budget_amount">金额</string>
     <string name="budget_remove_row">删除这一项</string>
