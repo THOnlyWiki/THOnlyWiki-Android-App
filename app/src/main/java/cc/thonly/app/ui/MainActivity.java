@@ -1,7 +1,9 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
@@ -404,9 +406,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             int page = pageIdOf(item.page());
             if (page != PAGE_NONE) {
                 selectPage(page);
-            } else if (!item.url().isEmpty()) {
-                // 老版本不认识这个 page，退化成打开网页，入口不丢
-                openInWeb(item.url());
+            } else {
+                // 云端配了当前版本还不认识的页面：明确告知，不做静默降级
+                AppLog.e("sidebar", "未知页面: " + item.page() + " (" + item.label() + ")", null);
+                showUnsupportedPageDialog(item);
             }
             return;
         }
@@ -415,6 +418,20 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             return;
         }
         openInWeb(item.url());
+    }
+
+    private void showUnsupportedPageDialog(AppSidebar.Item item) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.unsupported_page_title)
+                .setMessage(getString(R.string.unsupported_page_message, item.label()))
+                .setPositiveButton(R.string.update_go, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        UpdateDialog.openDownloadPage(MainActivity.this);
+                    }
+                })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
     }
 
     private int pageIdOf(String page) {

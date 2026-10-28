@@ -130,6 +130,8 @@
     <string name="favorite_empty">还没有关注的活动\n点列表右侧的 ★ 就能关注</string>
 
     <string name="nav_toolbox">百宝箱</string>
+    <string name="unsupported_page_title">需要更新 App</string>
+    <string name="unsupported_page_message">「%1$s」这个入口需要新版本的 App 才能打开，当前版本还不支持。\n\n更新之后再试。</string>
     <string name="toolbox_group_tools">工具</string>
     <string name="tool_budget_title">预算分摊</string>
     <string name="tool_budget_desc">门票、交通、住宿加起来，按人数均摊</string>
