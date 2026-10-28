@@ -140,7 +140,7 @@ public final class ChecklistDialog {
         return row;
     }
 
-    private View createRestoreEntry(int hiddenCount) {
+    private View createRestoreEntry(final int hiddenCount) {
         TextView restore = new TextView(activity);
         restore.setText(activity.getString(R.string.checklist_restore, hiddenCount));
         restore.setTextColor(activity.getColor(R.color.text_secondary));
@@ -149,11 +149,46 @@ public final class ChecklistDialog {
         restore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                checklist.unhideAll();
-                rebuild();
+                promptRestore();
             }
         });
         return restore;
+    }
+
+    /** 逐个选择要恢复哪些，而不是一股脑全恢复 */
+    private void promptRestore() {
+        final List<String> hidden = checklist.hiddenItems();
+        if (hidden.isEmpty()) {
+            return;
+        }
+        final boolean[] checked = new boolean[hidden.size()];
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.checklist_restore_title)
+                .setMultiChoiceItems(hidden.toArray(new String[0]), checked,
+                        new DialogInterface.OnMultiChoiceClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                checked[which] = isChecked;
+                            }
+                        })
+                .setPositiveButton(R.string.checklist_restore_confirm,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                List<String> selected = new ArrayList<String>();
+                                for (int i = 0; i < hidden.size(); i++) {
+                                    if (checked[i]) {
+                                        selected.add(hidden.get(i));
+                                    }
+                                }
+                                if (!selected.isEmpty()) {
+                                    checklist.unhide(selected);
+                                    rebuild();
+                                }
+                            }
+                        })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
     }
 
     private View createAddEntry() {

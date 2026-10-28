@@ -18,10 +18,17 @@ public final class ToolboxController {
 
     private final Activity activity;
 
-    public ToolboxController(final Activity activity, View root) {
+    public ToolboxController(final Activity activity, View root, final Runnable openMusic) {
         this.activity = activity;
         LinearLayout list = root.findViewById(R.id.toolList);
 
+        addCard(list, R.string.tool_music_title, R.string.tool_music_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openMusic.run();
+                    }
+                });
         addCard(list, R.string.tool_budget_title, R.string.tool_budget_desc,
                 new View.OnClickListener() {
                     @Override

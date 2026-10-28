@@ -103,6 +103,28 @@ public final class Checklist {
         return stored != null && stored.contains(item);
     }
 
+    /** 已隐藏的内置条目，按名称排序 */
+    public java.util.List<String> hiddenItems() {
+        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);
+        java.util.List<String> items = new java.util.ArrayList<String>();
+        if (stored != null) {
+            items.addAll(stored);
+            java.util.Collections.sort(items);
+        }
+        return items;
+    }
+
+    /** 恢复指定的若干条 */
+    public void unhide(java.util.Collection<String> items) {
+        Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);
+        if (stored == null) {
+            return;
+        }
+        Set<String> next = new HashSet<String>(stored);
+        next.removeAll(items);
+        preferences.edit().putStringSet(key + KEY_SUFFIX_HIDDEN, next).apply();
+    }
+
     /** 隐藏一个内置条目（不是删除，随时可以恢复） */
     public void hide(String item) {
         Set<String> stored = preferences.getStringSet(key + KEY_SUFFIX_HIDDEN, null);

@@ -60,6 +60,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_REGISTER = 4;
     private static final int PAGE_SETTINGS = 5;
     private static final int PAGE_TOOLBOX = 6;
+    private static final int PAGE_MUSIC = 7;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -86,6 +87,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private RegisterController registerController;
     private SettingsController settingsController;
     private ToolboxController toolboxController;
+    private MusicController musicController;
 
     private View[] pages;
     private View scrim;
@@ -138,6 +140,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View registerPage = getLayoutInflater().inflate(R.layout.view_register, content, false);
         View settingsPage = getLayoutInflater().inflate(R.layout.view_settings, content, false);
         View toolboxPage = getLayoutInflater().inflate(R.layout.view_toolbox, content, false);
+        View musicPage = getLayoutInflater().inflate(R.layout.view_music, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
@@ -145,8 +148,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(registerPage);
         content.addView(settingsPage);
         content.addView(toolboxPage);
+        content.addView(musicPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
-                settingsPage, toolboxPage};
+                settingsPage, toolboxPage, musicPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -164,7 +168,13 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         registerController = new RegisterController(this, registerPage, session, this);
         settingsController = new SettingsController(this, settingsPage, settings,
                 updateChecker, currentVersion, cache);
-        toolboxController = new ToolboxController(this, toolboxPage);
+        toolboxController = new ToolboxController(this, toolboxPage, new Runnable() {
+            @Override
+            public void run() {
+                selectPage(PAGE_MUSIC);
+            }
+        });
+        musicController = new MusicController(this, musicPage);
         store.addListener(listController);
         store.addListener(calendarController);
         store.addListener(this);
@@ -691,6 +701,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         store.removeListener(this);
         store.shutdown();
         webController.onDestroy();
+        musicController.onDestroy();
         super.onDestroy();
     }
 }
