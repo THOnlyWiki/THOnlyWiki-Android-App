@@ -1,7 +1,7 @@
 """生成各密度启动图标（纯标准库，无 Pillow 依赖）。
 
 用法： python tools/make_icons.py
-输出： src/main/res/mipmap-*/ic_launcher.png
+输出： app/src/main/res/mipmap-*/ic_launcher.png
 """
 
 import os

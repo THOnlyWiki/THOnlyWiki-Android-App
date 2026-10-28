@@ -54,42 +54,50 @@ https://thonly.cc/index.php?title=WikiKernel%3AAppVersion&action=raw
 
 ## 目录结构
 
-单模块工程，模块就是仓库根目录，没有 `app/` 这一层：
+`client` 是客户端容器，Android 模块是它下面的 `app`（Gradle 路径 `:client:app`）：
 
 ```
 client/
-├── build.gradle              模块配置（AGP、版本号、签名、混淆）
-├── settings.gradle           rootProject.name，无 include
-├── src/main/
-│   ├── AndroidManifest.xml
-│   ├── java/cc/thonly/app/
-│   │   ├── AppConfig.java          服务器地址、超时、UA
-│   │   ├── data/
-│   │   │   ├── Event / EventData / EventDate / EventCategory / EventStatus
-│   │   │   ├── EventRepository / RemoteEventRepository / LoadResult
-│   │   │   ├── EventStore                    异步加载 + 观察者
-│   │   │   ├── AppSidebar / SidebarRepository 抽屉配置下发
-│   │   │   ├── AuthApi / UserSession         登录注册与登录态
-│   │   │   ├── AppVersion                    版本号解析与比较
-│   │   │   ├── SettingsStore                 本地设置
-│   │   │   └── UpdateChecker                 检查更新
-│   │   ├── ui/
-│   │   │   ├── MainActivity                  装配：抽屉 + 页面路由
-│   │   │   ├── ListController / CalendarController
-│   │   │   ├── WebController                 主站 WebView + CSS 注入
-│   │   │   ├── LoginController / RegisterController
-│   │   │   ├── SettingsController
-│   │   │   ├── EventAdapter / EventActions / EventInteraction / ChipFactory
-│   │   │   ├── MonthView                     自绘月历
-│   │   │   └── UpdateDialog / AuthHost
-│   │   └── util/
-│   │       ├── HttpClient / FileCache
-│   │       ├── AppUrls                       URL 补全与 open_reference
-│   │       ├── CookieBridge                  Cookie 注入 WebView
-│   │       ├── CalendarInserter              拉起系统日历
-│   │       └── IcsDownloader                 .ics 下载兜底
-│   └── res/
-└── tools/make_icons.py       图标生成脚本
+├── settings.gradle            独立构建用：rootProject.name + include ':app'
+├── gradlew / gradle/          独立构建用的 wrapper
+├── app/
+│   ├── build.gradle           模块配置（AGP、版本号、签名、混淆）
+│   ├── proguard-rules.pro
+│   └── src/main/
+│       ├── AndroidManifest.xml
+│       ├── java/cc/thonly/app/
+│       │   ├── AppConfig.java            服务器地址、超时、UA
+│       │   ├── data/
+│       │   │   ├── Event / EventData / EventDate / EventCategory / EventStatus
+│       │   │   ├── EventRepository / RemoteEventRepository / LoadResult
+│       │   │   ├── EventStore                     异步加载 + 观察者
+│       │   │   ├── ActivityEditor                 活动增删改
+│       │   │   ├── AppSidebar / SidebarRepository  抽屉配置下发
+│       │   │   ├── AuthApi / UserSession          登录注册与登录态
+│       │   │   ├── AppVersion                     版本号解析与比较
+│       │   │   ├── SettingsStore                  本地设置
+│       │   │   └── UpdateChecker                  检查更新
+│       │   ├── ui/
+│       │   │   ├── MainActivity                   装配：抽屉 + 页面路由
+│       │   │   ├── ListController / CalendarController
+│       │   │   ├── WebController                  主站 WebView + CSS 注入
+│       │   │   ├── LoginController / RegisterController
+│       │   │   ├── SettingsController
+│       │   │   ├── EventAdapter / EventActions / EventInteraction
+│       │   │   ├── EventEditDialog / DropdownAdapter
+│       │   │   ├── MonthView                      自绘月历
+│       │   │   └── UpdateDialog / AuthHost
+│       │   └── util/
+│       │       ├── HttpClient / FileCache
+│       │       ├── FormPost                       表单 POST（登录 / 增删改）
+│       │       ├── AppUrls                        URL 补全与 open_reference
+│       │       ├── CookieBridge                   Cookie 注入 WebView
+│       │       ├── CalendarInserter               拉起系统日历
+│       │       └── IcsDownloader                  .ics 下载兜底
+│       └── res/
+├── docs/API.md
+├── README.md
+└── tools/make_icons.py        图标生成脚本
 ```
 
 分层原则：`ui` 不碰网络，`data` 不碰 Android UI，`util` 不依赖业务。
@@ -107,22 +115,22 @@ API 26+ 走 `mipmap-anydpi-v26/ic_launcher.xml` 的自适应图标，低版本�
 
 **Android Studio**：直接打开本目录，等待 Gradle 同步完成即可。
 
-**命令行**：
+**命令行**（在 `client/` 下独立构建）：
 
 ```bash
 export JAVA_HOME=/path/to/jdk-17-or-21
-./gradlew assembleRelease
-# 产物：build/outputs/apk/release/client-release.apk
+./gradlew :app:assembleRelease
+# 产物：app/build/outputs/apk/release/app-release.apk
 ```
 
-**作为父工程的子项目**：本目录同时被 `WikiKernel/settings.gradle` 以
-`include 'client'` 纳入，可以在同一个 IDE 窗口里当子工程打开。
+**作为父工程的子项目**：`WikiKernel/settings.gradle` 里 `include 'client:app'`，
+IDE 里会同时出现 `:client`（容器）和 `:client:app`（Android 模块）两个节点。
 这一步是**有条件**的——只有本机存在 `local.properties`（或设了 `ANDROID_HOME`）才纳入，
 所以服务端 CI 和没装 Android 工具链的机器不会被 AGP 拖累。
 
 ```bash
-cd ..
-./gradlew :client:assembleRelease   # 从父工程构建
+cd ..            # 回到 WikiKernel 根目录
+./gradlew :client:app:assembleRelease
 ```
 
 > Gradle 9 要求 JDK 17 以上；AGP 9 需要 Build Tools 36，老 SDK 里没有的话
