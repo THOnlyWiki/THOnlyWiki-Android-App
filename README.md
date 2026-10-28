@@ -101,6 +101,8 @@ API 26+ 走 `mipmap-anydpi-v26/ic_launcher.xml` 的自适应图标，低版本�
 
 ## 构建
 
+工具链：**Gradle 9.7.1 + AGP 9.4.1 + JDK 17/21 + Build Tools 36**，与服务端工程保持一致。
+
 **Android Studio**：直接打开本目录，等待 Gradle 同步完成即可。
 
 **命令行**：
@@ -111,7 +113,18 @@ export JAVA_HOME=/path/to/jdk-17-or-21
 # 产物：build/outputs/apk/release/thonlywiki-app-release.apk
 ```
 
-> Gradle 8.9 不支持 JDK 25，命令行构建请用 JDK 17 或 21（Android Studio 自带的 JBR 也可以）。
+**作为父工程的子项目**：本目录同时被 `WikiKernel/settings.gradle` 以
+`include 'thonlywiki-app'` 纳入，可以在同一个 IDE 窗口里当子工程打开。
+这一步是**有条件**的——只有本机存在 `local.properties`（或设了 `ANDROID_HOME`）才纳入，
+所以服务端 CI 和没装 Android 工具链的机器不会被 AGP 拖累。
+
+```bash
+cd ..
+./gradlew :thonlywiki-app:assembleRelease   # 从父工程构建
+```
+
+> Gradle 9 要求 JDK 17 以上；AGP 9 需要 Build Tools 36，老 SDK 里没有的话
+> 用 `sdkmanager "build-tools;36.0.0"` 补一下。
 
 ## 签名
 
