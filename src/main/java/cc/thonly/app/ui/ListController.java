@@ -19,6 +19,7 @@ import cc.thonly.app.data.Event;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventCategory;
 import cc.thonly.app.data.EventData;
+import cc.thonly.app.data.EventDate;
 import cc.thonly.app.data.EventStore;
 
 /** 速查表页：年份 / 类型两个下拉筛选 + 关键字搜索 + 列表。 */
@@ -32,12 +33,15 @@ public final class ListController implements EventStore.Listener {
     private final Spinner categorySpinner;
     private final TextView countLabel;
     private final TextView emptyLabel;
+    private final ListView listView;
 
     /** null 表示不限类型 */
     private EventCategory categoryFilter;
     private String keyword = "";
     private int selectedYear;
     private List<Integer> availableYears = new ArrayList<Integer>();
+    /** 点了「今天」但数据还没加载回来时置位，加载完成后滚动 */
+    private boolean pendingScrollToToday;
 
     public ListController(Activity activity, View root, EventStore store, EventInteraction interaction) {
         this.activity = activity;
@@ -52,6 +56,14 @@ public final class ListController implements EventStore.Listener {
 
         ListView listView = root.findViewById(R.id.listView);
         listView.setAdapter(adapter);
+        this.listView = listView;
+
+        root.findViewById(R.id.jumpToday).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                jumpToNow();
+            }
+        });
 
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override
@@ -84,6 +96,12 @@ public final class ListController implements EventStore.Listener {
     public void onDataLoaded(EventData data) {
         renderYearSpinner();
         applyFilter();
+        if (pendingScrollToToday) {
+            pendingScrollToToday = false;
+            if (data.year() == Calendar.getInstance().get(Calendar.YEAR)) {
+                scrollToToday();
+            }
+        }
     }
 
     @Override
@@ -160,6 +178,46 @@ public final class ListController implements EventStore.Listener {
     private void setCategoryFilter(EventCategory category) {
         categoryFilter = category;
         applyFilter();
+    }
+
+    /** 定位到现在：年份不是今年就先切过去，数据到了再滚动 */
+    private void jumpToNow() {
+        int todayYear = Calendar.getInstance().get(Calendar.YEAR);
+        if (selectedYear != todayYear) {
+            pendingScrollToToday = true;
+            store.load(todayYear, false);
+            return;
+        }
+        scrollToToday();
+    }
+
+    /** 滚到第一场「今天或之后」的活动；全年的都过去了就停在最后一条 */
+    private void scrollToToday() {
+        EventData data = store.current();
+        if (data == null) {
+            return;
+        }
+        List<Event> events = data.filter(categoryFilter, keyword);
+        if (events.isEmpty()) {
+            return;
+        }
+
+        Calendar now = Calendar.getInstance();
+        int nowMonth = now.get(Calendar.MONTH) + 1;
+        int nowDay = now.get(Calendar.DAY_OF_MONTH);
+
+        int target = events.size() - 1;
+        for (int i = 0; i < events.size(); i++) {
+            EventDate date = events.get(i).date();
+            if (!date.isResolved()) {
+                continue;
+            }
+            if (date.month() > nowMonth || (date.month() == nowMonth && date.day() >= nowDay)) {
+                target = i;
+                break;
+            }
+        }
+        listView.setSelection(target);
     }
 
     private void applyFilter() {

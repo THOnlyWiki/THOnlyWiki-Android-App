@@ -31,6 +31,7 @@ public final class CalendarController implements EventStore.Listener, MonthView.
     private final MonthView monthView;
     private final TextView dayTitle;
     private final TextView emptyLabel;
+    private final ListView dayList;
 
     private int year;
     private int month;
@@ -49,6 +50,7 @@ public final class CalendarController implements EventStore.Listener, MonthView.
 
         ListView dayList = root.findViewById(R.id.dayList);
         dayList.setAdapter(adapter);
+        this.dayList = dayList;
 
         Calendar now = Calendar.getInstance();
         year = now.get(Calendar.YEAR);
@@ -66,6 +68,12 @@ public final class CalendarController implements EventStore.Listener, MonthView.
             @Override
             public void onClick(View v) {
                 shiftMonth(1);
+            }
+        });
+        root.findViewById(R.id.jumpToday).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goToToday();
             }
         });
     }
@@ -134,6 +142,22 @@ public final class CalendarController implements EventStore.Listener, MonthView.
             store.load(year, false);
         }
         refresh();
+    }
+
+    /** 定位到现在：回到当前年月并选中今天，必要时把那一年的数据拉下来 */
+    private void goToToday() {
+        Calendar now = Calendar.getInstance();
+        int todayYear = now.get(Calendar.YEAR);
+        year = todayYear;
+        month = now.get(Calendar.MONTH) + 1;
+        day = now.get(Calendar.DAY_OF_MONTH);
+
+        EventData data = store.current();
+        if (data == null || data.year() != todayYear) {
+            store.load(todayYear, false);
+        }
+        refresh();
+        dayList.setSelection(0);
     }
 
     private void refresh() {

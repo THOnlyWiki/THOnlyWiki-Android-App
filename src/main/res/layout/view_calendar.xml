@@ -42,6 +42,18 @@
             android:text="▶"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/jumpToday"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="12dp"
+            android:text="@string/action_today"
+            android:textColor="@color/accent"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <cc.thonly.app.ui.MonthView
