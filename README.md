@@ -52,33 +52,42 @@ https://thonly.cc/index.php?title=WikiKernel%3AAppVersion&action=raw
 
 ## 目录结构
 
+单模块工程，模块就是仓库根目录，没有 `app/` 这一层：
+
 ```
-app/src/main/java/cc/thonly/app/
-├── AppConfig.java              全局配置（服务器地址、超时、UA）
-├── data/                       数据层
-│   ├── Event.java              活动实体（不可变）
-│   ├── EventData.java          某年的活动集合 + 筛选/查询
-│   ├── EventDate.java          日期值对象（兼容服务端自由文本）
-│   ├── EventCategory.java      类型枚举
-│   ├── EventStatus.java        状态枚举（带颜色映射）
-│   ├── EventRepository.java    仓库接口
-│   ├── RemoteEventRepository.java   HTTP 实现 + 缓存兜底
-│   ├── EventStore.java         状态容器：异步加载 + 观察者通知
-│   └── EventApiException.java
-├── ui/                         界面层
-│   ├── MainActivity.java       装配：抽屉导航 + 两个页面控制器
-│   ├── ListController.java     速查表页逻辑
-│   ├── CalendarController.java 日历页逻辑（跟随 store 年份，不抢年份）
-│   ├── EventAdapter.java       列表适配器（两页共用）
-│   ├── EventActions.java       详情弹窗 / 加日历 / 复制群号
-│   ├── EventInteraction.java   列表项操作接口
-│   ├── ChipFactory.java        筛选标签样式工厂
-│   └── MonthView.java          自绘月历
-└── util/
-    ├── HttpClient.java         极简 GET
-    ├── FileCache.java          文件缓存
-    ├── CalendarInserter.java   拉起系统日历新建日程
-    └── IcsDownloader.java      .ics 下载（无日历应用时兜底）
+thonlywiki-app/
+├── build.gradle              模块配置（AGP、版本号、签名、混淆）
+├── settings.gradle           rootProject.name，无 include
+├── src/main/
+│   ├── AndroidManifest.xml
+│   ├── java/cc/thonly/app/
+│   │   ├── AppConfig.java          服务器地址、超时、UA
+│   │   ├── data/
+│   │   │   ├── Event / EventData / EventDate / EventCategory / EventStatus
+│   │   │   ├── EventRepository / RemoteEventRepository / LoadResult
+│   │   │   ├── EventStore                    异步加载 + 观察者
+│   │   │   ├── AppSidebar / SidebarRepository 抽屉配置下发
+│   │   │   ├── AuthApi / UserSession         登录注册与登录态
+│   │   │   ├── AppVersion                    版本号解析与比较
+│   │   │   ├── SettingsStore                 本地设置
+│   │   │   └── UpdateChecker                 检查更新
+│   │   ├── ui/
+│   │   │   ├── MainActivity                  装配：抽屉 + 页面路由
+│   │   │   ├── ListController / CalendarController
+│   │   │   ├── WebController                 主站 WebView + CSS 注入
+│   │   │   ├── LoginController / RegisterController
+│   │   │   ├── SettingsController
+│   │   │   ├── EventAdapter / EventActions / EventInteraction / ChipFactory
+│   │   │   ├── MonthView                     自绘月历
+│   │   │   └── UpdateDialog / AuthHost
+│   │   └── util/
+│   │       ├── HttpClient / FileCache
+│   │       ├── AppUrls                       URL 补全与 open_reference
+│   │       ├── CookieBridge                  Cookie 注入 WebView
+│   │       ├── CalendarInserter              拉起系统日历
+│   │       └── IcsDownloader                 .ics 下载兜底
+│   └── res/
+└── tools/make_icons.py       图标生成脚本
 ```
 
 分层原则：`ui` 不碰网络，`data` 不碰 Android UI，`util` 不依赖业务。
@@ -86,7 +95,7 @@ app/src/main/java/cc/thonly/app/
 
 ## 图标
 
-`app/src/main/res/mipmap-*` 由 `D:\wwwroot\Touhou_Activities_Wiki_Logo.svg` 渲染而来：
+`src/main/res/mipmap-*` 由 `D:\wwwroot\Touhou_Activities_Wiki_Logo.svg` 渲染而来：
 无头 Chromium 转 PNG 后，用 ImageMagick 生成各密度图标与自适应图标前景。
 API 26+ 走 `mipmap-anydpi-v26/ic_launcher.xml` 的自适应图标，低版本用方形 PNG 兜底。
 
@@ -99,7 +108,7 @@ API 26+ 走 `mipmap-anydpi-v26/ic_launcher.xml` 的自适应图标，低版本�
 ```bash
 export JAVA_HOME=/path/to/jdk-17-or-21
 ./gradlew assembleRelease
-# 产物：app/build/outputs/apk/release/app-release.apk
+# 产物：build/outputs/apk/release/thonlywiki-app-release.apk
 ```
 
 > Gradle 8.9 不支持 JDK 25，命令行构建请用 JDK 17 或 21（Android Studio 自带的 JBR 也可以）。
@@ -113,7 +122,7 @@ keytool -genkeypair -v -keystore release.jks -alias thonly \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-然后把 `app/build.gradle` 里的 `signingConfig signingConfigs.debug` 换成你自己的配置。
+然后把 `build.gradle` 里的 `signingConfig signingConfigs.debug` 换成你自己的配置。
 
 ## 改服务器地址
 
@@ -131,6 +140,6 @@ JSON 用系统自带的 `org.json`，网络用 `HttpURLConnection`，日历控�
 
 ## 已知取舍
 
-- 只读：不包含登录、编辑、评论等功能，需要这些请用网页版
+- 编辑能力只在主站网页里做，App 不重复实现编辑器；登录/注册是原生表单，登录后主站即为登录态
 - 服务端 `date` 是自由文本，只有能解析到具体某天的活动才会出现在月历里；`暂无`、`2026年末` 这类只在列表中展示原文
 - 未做深色模式，站点本身是浅色皮肤
