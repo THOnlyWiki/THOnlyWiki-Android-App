@@ -11,6 +11,7 @@ import cc.thonly.app.R;
 import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.UpdateChecker;
+import cc.thonly.app.util.DeviceInfo;
 import cc.thonly.app.util.FileCache;
 
 /** 设置页：版本信息、自动检查更新、下载最新版、清除缓存。 */
@@ -24,6 +25,8 @@ public final class SettingsController {
 
     private final TextView versionValue;
     private final TextView aboutText;
+    private final TextView deviceModelValue;
+    private final TextView webViewValue;
     private final Switch autoCheckSwitch;
 
     public SettingsController(Activity activity, View root, SettingsStore settings,
@@ -35,6 +38,8 @@ public final class SettingsController {
         this.cache = cache;
         this.versionValue = root.findViewById(R.id.versionValue);
         this.aboutText = root.findViewById(R.id.aboutText);
+        this.deviceModelValue = root.findViewById(R.id.deviceModelValue);
+        this.webViewValue = root.findViewById(R.id.webViewValue);
         this.autoCheckSwitch = root.findViewById(R.id.autoCheckUpdate);
 
         bind(root);
@@ -76,6 +81,10 @@ public final class SettingsController {
 
         versionValue.setText(currentVersion.name());
         aboutText.setText(activity.getString(R.string.settings_about, currentVersion.name()));
+
+        // 排查问题时用户报这两个值最有用
+        deviceModelValue.setText(DeviceInfo.model(activity));
+        webViewValue.setText(DeviceInfo.webViewVersion(activity));
     }
 
     private void checkNow() {

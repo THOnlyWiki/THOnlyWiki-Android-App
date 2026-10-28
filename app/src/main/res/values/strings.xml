@@ -6,6 +6,7 @@
     <string name="refresh">刷新</string>
     <string name="action_today">今天</string>
     <string name="region_all">全部地区</string>
+    <string name="choose_calendar_app">选择日历应用</string>
 
     <string name="edit_entry">编辑</string>
     <string name="edit_done">完成</string>
@@ -113,6 +114,8 @@
     <string name="settings_group_about">关于</string>
     <string name="settings_download">前往官网下载最新版</string>
     <string name="settings_clear_cache">清除离线存档</string>
+    <string name="settings_device_model">设备型号</string>
+    <string name="settings_webview_version">WebView 版本</string>
     <string name="settings_about">东方Project线下活动维基 %1$s\n开发者：稀神灵梦\nthonly.cc 官方客户端</string>
 
     <string name="update_checking">正在检查更新…</string>

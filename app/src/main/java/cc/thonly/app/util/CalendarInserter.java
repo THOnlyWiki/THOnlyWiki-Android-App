@@ -1,13 +1,21 @@
 package cc.thonly.app.util;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.provider.CalendarContract;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 
+import cc.thonly.app.R;
 import cc.thonly.app.data.Event;
 
 /**
@@ -47,11 +55,53 @@ public final class CalendarInserter {
                 .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_PER_DAY);
 
         try {
-            activity.startActivity(intent);
+            List<ResolveInfo> handlers = queryCalendarApps(activity, intent);
+            if (handlers.size() > 1) {
+                // 装了多个日历时自己弹列表让用户选。
+                // 不用 Intent.createChooser——MIUI 会直接把 ACTION_INSERT 解析掉，
+                // 选择器根本不显示（实测：数到 2 个应用仍然直接进了系统日历）。
+                showPicker(activity, intent, handlers);
+            } else {
+                activity.startActivity(intent);
+            }
             return true;
         } catch (ActivityNotFoundException e) {
             return false;
         }
+    }
+
+    private static List<ResolveInfo> queryCalendarApps(Activity activity, Intent intent) {
+        List<ResolveInfo> handlers = activity.getPackageManager()
+                .queryIntentActivities(intent, 0);
+        return handlers == null ? new ArrayList<ResolveInfo>() : handlers;
+    }
+
+    private static void showPicker(final Activity activity, final Intent intent,
+                                   final List<ResolveInfo> handlers) {
+        final PackageManager packageManager = activity.getPackageManager();
+        CharSequence[] labels = new CharSequence[handlers.size()];
+        for (int i = 0; i < handlers.size(); i++) {
+            labels[i] = handlers.get(i).loadLabel(packageManager);
+        }
+
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.choose_calendar_app)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ResolveInfo info = handlers.get(which);
+                        Intent explicit = new Intent(intent);
+                        explicit.setComponent(new ComponentName(
+                                info.activityInfo.packageName, info.activityInfo.name));
+                        try {
+                            activity.startActivity(explicit);
+                        } catch (ActivityNotFoundException ignored) {
+                            // 理论上不会发生，用户刚在列表里看到它
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
     }
 
     /** 全天日程按 UTC 零点计算，避免时区偏移导致日期变成前一天 */
