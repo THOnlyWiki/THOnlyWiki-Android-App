@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -33,7 +34,9 @@ import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.SidebarRepository;
 import cc.thonly.app.data.UpdateChecker;
 import cc.thonly.app.data.UserSession;
+import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.CookieBridge;
+import cc.thonly.app.util.DeviceInfo;
 import cc.thonly.app.util.FileCache;
 
 /**
@@ -105,10 +108,14 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        AppLog.init(this);
+        installCrashHandler();
+
         settings = new SettingsStore(this);
         session = new UserSession(this);
         updateChecker = new UpdateChecker();
         currentVersion = resolveCurrentVersion();
+        logEnvironment();
         cache = new FileCache(new File(getFilesDir(), CACHE_DIR_NAME));
         actions = new EventActions(this);
         store = new EventStore(new RemoteEventRepository(cache));
@@ -160,6 +167,36 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         store.load(currentYear(), false);
         checkUpdateOnStart();
         loadRemoteSidebar();
+    }
+
+    // ------------------------------------------------------------ 日志
+
+    /** 线上排查用：把未捕获异常写进日志文件，再交回系统默认处理 */
+    private void installCrashHandler() {
+        final Thread.UncaughtExceptionHandler previous =
+                Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable error) {
+                AppLog.e("crash", "未捕获异常，线程 " + thread.getName(), error);
+                if (previous != null) {
+                    previous.uncaughtException(thread, error);
+                }
+            }
+        });
+    }
+
+    private void logEnvironment() {
+        AppLog.i("app", "启动 " + currentVersion.name()
+                + " · " + DeviceInfo.model(this)
+                + " · Android " + Build.VERSION.RELEASE + "(" + Build.VERSION.SDK_INT + ")");
+        // WebView 版本要初始化 WebView 内核，放后台线程，别卡启动
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                AppLog.i("app", "WebView " + DeviceInfo.webViewVersion(MainActivity.this));
+            }
+        }, "log-webview").start();
     }
 
     // ------------------------------------------------------------ 装配

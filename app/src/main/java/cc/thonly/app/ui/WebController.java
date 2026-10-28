@@ -30,6 +30,7 @@ import java.util.Map;
 
 import cc.thonly.app.AppConfig;
 import cc.thonly.app.R;
+import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.AppUrls;
 
 /**
@@ -142,6 +143,9 @@ public final class WebController {
             public void onReceivedError(WebView view, WebResourceRequest request,
                                         WebResourceError error) {
                 if (request.isForMainFrame()) {
+                    AppLog.e("web", "加载失败 " + request.getUrl()
+                            + " code=" + error.getErrorCode()
+                            + " " + error.getDescription(), null);
                     progress.setVisibility(View.GONE);
                     errorView.setVisibility(View.VISIBLE);
                 }
@@ -221,6 +225,7 @@ public final class WebController {
             response.setStatusCodeAndReasonPhrase(status, "OK");
             return response;
         } catch (Exception e) {
+            AppLog.e("web", "注入样式失败，退回正常加载 " + url, e);
             return null;
         } finally {
             if (connection != null) {

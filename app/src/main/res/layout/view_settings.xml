@@ -100,6 +100,32 @@
             android:background="@color/divider" />
 
         <LinearLayout
+            android:id="@+id/rowExportLog"
+            style="@style/SettingRow">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/settings_export_log"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/exportLogHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_marginStart="20dp"
+            android:background="@color/divider" />
+
+        <LinearLayout
             android:id="@+id/rowDeviceModel"
             style="@style/SettingRow">
 

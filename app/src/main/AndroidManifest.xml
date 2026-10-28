@@ -36,6 +36,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 分享日志文件用，不对外暴露，只临时授权读权限 -->
+        <provider
+            android:name=".util.LogFileProvider"
+            android:authorities="cc.thonly.app.logs"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 
 </manifest>

@@ -1,18 +1,24 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+
 import cc.thonly.app.R;
 import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.UpdateChecker;
+import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.DeviceInfo;
 import cc.thonly.app.util.FileCache;
+import cc.thonly.app.util.LogFileProvider;
 
 /** 设置页：版本信息、自动检查更新、下载最新版、清除缓存。 */
 public final class SettingsController {
@@ -78,6 +84,12 @@ public final class SettingsController {
                 toast(R.string.toast_cache_cleared);
             }
         });
+        root.findViewById(R.id.rowExportLog).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                exportLog();
+            }
+        });
 
         versionValue.setText(currentVersion.name());
         aboutText.setText(activity.getString(R.string.settings_about, currentVersion.name()));
@@ -108,5 +120,35 @@ public final class SettingsController {
 
     private void toast(int messageRes) {
         Toast.makeText(activity, messageRes, Toast.LENGTH_SHORT).show();
+    }
+
+    /** 把日志文件通过系统分享面板发出去，用户可以直接发到群里 */
+    private void exportLog() {
+        File file = AppLog.file();
+        if (file == null || !file.exists() || file.length() == 0L) {
+            toast(R.string.settings_export_log_empty);
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_STREAM, LogFileProvider.contentUri())
+                .putExtra(Intent.EXTRA_SUBJECT,
+                        activity.getString(R.string.settings_export_log_subject))
+                // 附一段环境信息，接收方就算打不开文件也能看到基本情况
+                .putExtra(Intent.EXTRA_TEXT, environmentSummary())
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        try {
+            activity.startActivity(Intent.createChooser(intent,
+                    activity.getString(R.string.settings_export_log_chooser)));
+        } catch (ActivityNotFoundException e) {
+            toast(R.string.toast_no_share_app);
+        }
+    }
+
+    private String environmentSummary() {
+        return "版本 " + currentVersion.name()
+                + " · " + DeviceInfo.model(activity)
+                + " · WebView " + DeviceInfo.webViewVersion(activity);
     }
 }

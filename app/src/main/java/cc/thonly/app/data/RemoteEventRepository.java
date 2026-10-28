@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import cc.thonly.app.AppConfig;
+import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.FileCache;
 import cc.thonly.app.util.HttpClient;
 
@@ -60,8 +61,10 @@ public final class RemoteEventRepository implements EventRepository {
         } catch (IOException networkError) {
             // 网络不通：只要本地有存档就继续用，哪怕已经过期
             if (cached != null) {
+                AppLog.e("api", "拉取 " + year + " 失败，改用本地存档", networkError);
                 return new LoadResult(parse(year, cached), true, cachedAt);
             }
+            AppLog.e("api", "拉取 " + year + " 失败，且没有本地存档", networkError);
             throw new EventApiException("请求活动数据失败", networkError);
         }
     }
