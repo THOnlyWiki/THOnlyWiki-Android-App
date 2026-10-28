@@ -10,11 +10,23 @@ import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import cc.thonly.app.AppConfig;
 import cc.thonly.app.R;
@@ -45,9 +57,14 @@ public final class WebController {
                     + "(document.head||document.documentElement).appendChild(s);}"
                     + "s.textContent=\"" + APP_CHROME_CSS + "\";})();";
 
+    private static final String STYLE_TAG =
+            "<style id=\"thonly-app-chrome\">" + APP_CHROME_CSS + "</style>";
+
     private final Activity activity;
     private final WebView webView;
     private final ProgressBar progress;
+    /** WebView 的方法只能在主线程调，拦截时跑在后台线程，所以提前存下来 */
+    private String userAgent = "";
     private final TextView errorView;
 
     private boolean loaded;
@@ -75,6 +92,7 @@ public final class WebController {
         settings.setLoadWithOverviewMode(true);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setUserAgentString(settings.getUserAgentString() + AppConfig.USER_AGENT);
+        userAgent = settings.getUserAgentString();
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -84,6 +102,27 @@ public final class WebController {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return handleUri(request.getUrl());
+            }
+
+            /**
+             * 在主文档到达渲染器之前把样式塞进去，避免"先渲染完整页面再收起"的跳动。
+             *
+             * <p>只拦站内 GET 主文档；3xx 一律放回给 WebView 自己处理（跳转目标会再拦一次），
+             * 任何异常都返回 null 退回正常加载，最多闪一下，不会白屏。
+             */
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                if (request == null || !request.isForMainFrame()) {
+                    return null;
+                }
+                if (!"GET".equalsIgnoreCase(request.getMethod())) {
+                    return null;
+                }
+                Uri uri = request.getUrl();
+                if (!AppUrls.isInternal(uri)) {
+                    return null;
+                }
+                return injectIntoDocument(uri.toString());
             }
 
             @Override
@@ -137,6 +176,115 @@ public final class WebController {
         } catch (ActivityNotFoundException ignored) {
             // 没有应用能处理就算了，留在当前页
         }
+    }
+
+    // ------------------------------------------------------------ 加载前注入样式
+
+    /**
+     * 自己把主文档下载下来，在 {@code <head>} 后面插入样式再交给 WebView。
+     *
+     * <p>这样样式在首次绘制前就生效，不会出现「先显示完整页面再收起」的跳动。
+     * 任何异常都返回 null，退回 WebView 的正常加载。
+     */
+    private WebResourceResponse injectIntoDocument(String url) {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(url).openConnection();
+            // 跳转交给 WebView 自己处理，跳转目标会再被拦一次
+            connection.setInstanceFollowRedirects(false);
+            connection.setConnectTimeout(AppConfig.CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(AppConfig.READ_TIMEOUT_MS);
+            connection.setRequestProperty("Accept-Encoding", "identity");
+            connection.setRequestProperty("User-Agent", userAgent);
+            String cookie = CookieManager.getInstance().getCookie(url);
+            if (cookie != null && !cookie.isEmpty()) {
+                connection.setRequestProperty("Cookie", cookie);
+            }
+
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return null;
+            }
+            String contentType = connection.getContentType();
+            if (contentType == null
+                    || !contentType.toLowerCase(Locale.ROOT).contains("text/html")) {
+                return null;
+            }
+
+            Charset charset = charsetOf(contentType);
+            String injected = insertStyle(readAll(connection.getInputStream(), charset));
+            forwardCookies(url, connection);
+
+            WebResourceResponse response = new WebResourceResponse(
+                    "text/html", charset.name(),
+                    new ByteArrayInputStream(injected.getBytes(charset)));
+            response.setStatusCodeAndReasonPhrase(status, "OK");
+            return response;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    /** 拦截后 WebView 不再自己处理响应头，Set-Cookie 得手动塞回 CookieManager */
+    private static void forwardCookies(String url, HttpURLConnection connection) {
+        CookieManager manager = CookieManager.getInstance();
+        boolean changed = false;
+        for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
+            if (entry.getKey() == null || !"Set-Cookie".equalsIgnoreCase(entry.getKey())) {
+                continue;
+            }
+            for (String value : entry.getValue()) {
+                manager.setCookie(url, value);
+                changed = true;
+            }
+        }
+        if (changed) {
+            manager.flush();
+        }
+    }
+
+    private static String insertStyle(String html) {
+        int head = html.toLowerCase(Locale.ROOT).indexOf("<head");
+        if (head >= 0) {
+            int close = html.indexOf('>', head);
+            if (close > 0) {
+                return html.substring(0, close + 1) + STYLE_TAG + html.substring(close + 1);
+            }
+        }
+        return STYLE_TAG + html;
+    }
+
+    private static Charset charsetOf(String contentType) {
+        String lower = contentType.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf("charset=");
+        if (index >= 0) {
+            String name = lower.substring(index + 8).trim();
+            int end = name.indexOf(';');
+            if (end > 0) {
+                name = name.substring(0, end);
+            }
+            try {
+                return Charset.forName(name.trim());
+            } catch (Exception ignored) {
+                // 落到 UTF-8
+            }
+        }
+        return Charset.forName("UTF-8");
+    }
+
+    private static String readAll(InputStream stream, Charset charset) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int count;
+        while ((count = stream.read(chunk)) != -1) {
+            buffer.write(chunk, 0, count);
+        }
+        stream.close();
+        return new String(buffer.toByteArray(), charset);
     }
 
     public void onShown() {

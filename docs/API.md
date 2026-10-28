@@ -224,7 +224,9 @@ https://thonly.cc/index.php?title=WikiKernel%3ASidebar-App&action=raw
 
 ### App 内隐藏的站点元素
 
-App 打开网页时会在 `<head>` 里注入一段 CSS，只去掉两个装饰元素：
+App 打开站内页面时，会在**主文档到达渲染器之前**把样式插进 `<head>`
+（`shouldInterceptRequest` 里自己取 HTML、插入 `<style>` 再交给 WebView），
+所以首帧就是最终效果，不会出现「先显示完整页面再收起」的跳动。只去掉两个装饰元素：
 
 ```css
 #p-banner, a.mw-wiki-logo { display: none !important; }
