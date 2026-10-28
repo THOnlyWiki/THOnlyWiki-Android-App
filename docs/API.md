@@ -185,3 +185,51 @@ Set-Cookie: wiki_token=...; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax
 站点自己在 `returnto` 里会带上 `open_reference=app`，说明这个参数是站点认可的来源标记。
 
 > 备注：联调时用 `__probe__` 探测注册接口，在站上真实创建了账号（id 126），需要在后台删除。
+
+## 六、App 抽屉配置（WikiKernel:Sidebar-App）
+
+App 的抽屉内容可由服务端下发，来源页面：
+
+```
+https://thonly.cc/index.php?title=WikiKernel%3ASidebar-App&action=raw
+```
+
+内容是**严格 JSON**（`action=raw` 返回原文，`ctype` 参数无效，Content-Type 恒为 text/plain）。
+解析失败、`schema` 过高、或 App 版本低于 `min_app_version` 时，整份配置都不同步，退回内置导航。
+
+### 结构
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `schema` | int | 是 | 结构版本，当前 1；服务端给更高版本时客户端整体忽略 |
+| `min_app_version` | string | 否 | 最低 App 版本，低于它整份不同步 |
+| `update_version` | int | 否 | 内容版本，仅作标识 |
+| `mode` | string | 否 | `extend`（默认，内置项 + 云端项）/ `replace`（云端项接管内容区） |
+| `sections[].title` | string | 否 | 分组标题 |
+| `sections[].items[].label` | string | 是 | 显示文字 |
+| `sections[].items[].target` | string | 否 | `app` / `web` / `external`，默认 `web` |
+| `sections[].items[].page` | string | target=app 时必填 | `list` `calendar` `web` `login` `register` `settings` |
+| `sections[].items[].url` | string | target=web/external 必填 | 站内相对路径或完整 URL；target=app 时作为老版本兜底 |
+
+### 路由规则
+
+- `app` → 打开原生页面；`page` 不认识时退化成用 `url` 开网页，入口不丢
+- `web` → App 内 WebView 打开，自动补 `open_reference=app`
+- `external` → 交给系统浏览器
+
+### 分区约定
+
+抽屉分两区：**内容区**（速查表 / 日历 / 主站，可被 `replace` 接管）和
+**系统区**（登录 / 注册 / 退出 / 设置）。系统区永远保留，避免配置写坏后用户连退出都找不到。
+
+### 站点侧栏的隐藏
+
+App 打开网页时会注入一段 CSS，隐藏站点自带的导航外壳：
+
+```css
+#mw-site-navigation,#p-logo-text,#mw-footer-container,#menus-cover{display:none!important}
+#mw-content-container{margin-left:0!important;padding-top:0!important}
+```
+
+保留 `#mw-header-container` 里的搜索框。**不要用 `.mdui-ripple` 做选择器**——
+它还挂在搜索按钮和上传按钮上，会一起被隐藏。

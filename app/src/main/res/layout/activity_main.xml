@@ -128,53 +128,83 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/navList"
-            style="@style/NavItem"
-            android:text="@string/tab_list" />
-
-        <TextView
-            android:id="@+id/navCalendar"
-            style="@style/NavItem"
-            android:text="@string/tab_calendar" />
-
-        <TextView
-            android:id="@+id/navWeb"
-            style="@style/NavItem"
-            android:text="@string/nav_web" />
-
-        <TextView
-            android:id="@+id/navLogin"
-            style="@style/NavItem"
-            android:text="@string/nav_login" />
-
-        <TextView
-            android:id="@+id/navRegister"
-            style="@style/NavItem"
-            android:text="@string/nav_register" />
-
-        <TextView
-            android:id="@+id/navLogout"
-            style="@style/NavItem"
-            android:text="@string/auth_logout"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/navSettings"
-            style="@style/NavItem"
-            android:text="@string/nav_settings" />
-
-        <View
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/navBuiltIn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/navList"
+                        style="@style/NavItem"
+                        android:text="@string/tab_list" />
+
+                    <TextView
+                        android:id="@+id/navCalendar"
+                        style="@style/NavItem"
+                        android:text="@string/tab_calendar" />
+
+                    <TextView
+                        android:id="@+id/navWeb"
+                        style="@style/NavItem"
+                        android:text="@string/nav_web" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/navDynamic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1px"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@color/divider" />
+
+                <TextView
+                    android:id="@+id/navLogin"
+                    style="@style/NavItem"
+                    android:text="@string/nav_login" />
+
+                <TextView
+                    android:id="@+id/navRegister"
+                    style="@style/NavItem"
+                    android:text="@string/nav_register" />
+
+                <TextView
+                    android:id="@+id/navLogout"
+                    style="@style/NavItem"
+                    android:text="@string/auth_logout"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/navSettings"
+                    style="@style/NavItem"
+                    android:text="@string/nav_settings" />
+            </LinearLayout>
+        </ScrollView>
 
         <TextView
             android:id="@+id/navVersion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingStart="20dp"
-            android:paddingTop="8dp"
+            android:paddingTop="10dp"
             android:paddingEnd="20dp"
             android:textColor="@color/text_tertiary"
             android:textSize="12sp" />

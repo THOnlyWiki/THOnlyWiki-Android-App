@@ -1,27 +1,35 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.AppSidebar;
 import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
 import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
+import cc.thonly.app.data.SidebarRepository;
 import cc.thonly.app.data.UpdateChecker;
 import cc.thonly.app.data.UserSession;
 import cc.thonly.app.util.CookieBridge;
@@ -29,7 +37,12 @@ import cc.thonly.app.util.FileCache;
 
 /**
  * 应用入口，只负责装配：数据仓库、各页面控制器、右侧导航抽屉、启动时检查更新。
- * 具体业务都在各自的 Controller 里。
+ *
+ * <p>抽屉分两区：
+ * <ul>
+ *   <li>内容区 —— 速查表 / 日历 / 主站，可被服务端下发的 {@code WikiKernel:Sidebar-App} 接管</li>
+ *   <li>系统区 —— 账号、设置，永远保留，避免配置写坏后用户连退出都找不到</li>
+ * </ul>
  */
 public final class MainActivity extends Activity implements EventStore.Listener, AuthHost {
 
@@ -39,6 +52,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_LOGIN = 3;
     private static final int PAGE_REGISTER = 4;
     private static final int PAGE_SETTINGS = 5;
+
+    /** 不是页面，只用于「这一行没有对应的原生页」 */
+    private static final int PAGE_NONE = -1;
 
     /** 存档放在 filesDir，系统不会像 cacheDir 那样在空间紧张时清掉 */
     private static final String CACHE_DIR_NAME = "activity";
@@ -51,6 +67,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private SettingsStore settings;
     private UserSession session;
     private UpdateChecker updateChecker;
+    private SidebarRepository sidebarRepository;
     private FileCache cache;
     private AppVersion currentVersion;
 
@@ -64,12 +81,19 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private View[] pages;
     private View scrim;
     private View drawer;
+    private View navBuiltIn;
+    private LinearLayout navDynamic;
     private TextView offlineBanner;
-    private TextView[] navItems;
     private TextView navLoginItem;
     private TextView navRegisterItem;
     private TextView navLogoutItem;
     private TextView accountLabel;
+
+    /** 固定行（内置 + 系统）与动态行分开存，动态行每次重新下发时重建 */
+    private final List<TextView> fixedRows = new ArrayList<TextView>();
+    private final List<Integer> fixedPages = new ArrayList<Integer>();
+    private final List<TextView> dynamicRows = new ArrayList<TextView>();
+    private final List<Integer> dynamicPages = new ArrayList<Integer>();
 
     private int currentPage = PAGE_LIST;
     private boolean drawerOpen;
@@ -87,6 +111,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         cache = new FileCache(new File(getFilesDir(), CACHE_DIR_NAME));
         actions = new EventActions(this);
         store = new EventStore(new RemoteEventRepository(cache));
+        sidebarRepository = new SidebarRepository(cache);
 
         // 上次登录的 Cookie 先灌进 WebView，主站打开就是登录态
         CookieBridge.apply(this, session.cookies());
@@ -131,6 +156,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         selectPage(PAGE_LIST);
         store.load(currentYear(), false);
         checkUpdateOnStart();
+        loadRemoteSidebar();
     }
 
     // ------------------------------------------------------------ 装配
@@ -158,6 +184,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private void bindDrawer() {
         drawer = findViewById(R.id.drawer);
         scrim = findViewById(R.id.scrim);
+        navBuiltIn = findViewById(R.id.navBuiltIn);
+        navDynamic = findViewById(R.id.navDynamic);
         drawerWidth = getResources().getDimensionPixelSize(R.dimen.drawer_width);
         drawer.setTranslationX(drawerWidth);
 
@@ -168,30 +196,15 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             }
         });
 
-        navItems = new TextView[]{
-                findViewById(R.id.navList),
-                findViewById(R.id.navCalendar),
-                findViewById(R.id.navWeb),
-                findViewById(R.id.navLogin),
-                findViewById(R.id.navRegister),
-                findViewById(R.id.navSettings)
-        };
-        for (int i = 0; i < navItems.length; i++) {
-            final int page = i;
-            navItems[i].setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    selectPage(page);
-                    closeDrawer();
-                }
-            });
-        }
+        bindNavRow(R.id.navList, PAGE_LIST);
+        bindNavRow(R.id.navCalendar, PAGE_CALENDAR);
+        bindNavRow(R.id.navWeb, PAGE_WEB);
+        bindNavRow(R.id.navLogin, PAGE_LOGIN);
+        bindNavRow(R.id.navRegister, PAGE_REGISTER);
+        bindNavRow(R.id.navSettings, PAGE_SETTINGS);
 
-        TextView versionLabel = findViewById(R.id.navVersion);
-        versionLabel.setText(getString(R.string.version_label, currentVersion.name()));
-
-        navLoginItem = navItems[PAGE_LOGIN];
-        navRegisterItem = navItems[PAGE_REGISTER];
+        navLoginItem = findViewById(R.id.navLogin);
+        navRegisterItem = findViewById(R.id.navRegister);
         navLogoutItem = findViewById(R.id.navLogout);
         accountLabel = findViewById(R.id.accountLabel);
         navLogoutItem.setOnClickListener(new View.OnClickListener() {
@@ -202,7 +215,23 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             }
         });
 
+        TextView versionLabel = findViewById(R.id.navVersion);
+        versionLabel.setText(getString(R.string.version_label, currentVersion.name()));
+
         updateAuthUi();
+    }
+
+    private void bindNavRow(int viewId, final int page) {
+        TextView row = findViewById(viewId);
+        fixedRows.add(row);
+        fixedPages.add(page);
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectPage(page);
+                closeDrawer();
+            }
+        });
     }
 
     /** 抽屉里的登录/注册项跟着登录态走：登录后换成「退出登录」 */
@@ -227,6 +256,129 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             // 落到下面的兜底
         }
         return AppVersion.parse("0.0.0");
+    }
+
+    // ------------------------------------------------------------ 云端抽屉配置
+
+    private void loadRemoteSidebar() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final AppSidebar sidebar = sidebarRepository.load(currentVersion);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        renderSidebar(sidebar);
+                    }
+                });
+            }
+        }, "sidebar").start();
+    }
+
+    private void renderSidebar(AppSidebar sidebar) {
+        navDynamic.removeAllViews();
+        dynamicRows.clear();
+        dynamicPages.clear();
+
+        if (sidebar.isEmpty()) {
+            // 没配置、配置坏了、或 App 版本低于 min_app_version —— 用内置导航
+            navBuiltIn.setVisibility(View.VISIBLE);
+            updateNavHighlight();
+            return;
+        }
+
+        navBuiltIn.setVisibility(sidebar.isReplaceBuiltIn() ? View.GONE : View.VISIBLE);
+
+        for (AppSidebar.Section section : sidebar.sections()) {
+            if (!section.title().isEmpty()) {
+                navDynamic.addView(createSectionTitle(section.title()));
+            }
+            for (AppSidebar.Item item : section.items()) {
+                navDynamic.addView(createNavRow(item));
+            }
+        }
+        updateNavHighlight();
+    }
+
+    private TextView createSectionTitle(String title) {
+        TextView view = new TextView(this);
+        view.setText(title);
+        view.setTextSize(12);
+        view.setTextColor(getColor(R.color.text_secondary));
+        view.setPadding(dp(20), dp(14), dp(20), dp(4));
+        return view;
+    }
+
+    private TextView createNavRow(final AppSidebar.Item item) {
+        TextView row = (TextView) getLayoutInflater().inflate(R.layout.item_nav, navDynamic, false);
+        row.setText(item.label());
+
+        int page = item.target() == AppSidebar.Target.APP ? pageIdOf(item.page()) : PAGE_NONE;
+        dynamicRows.add(row);
+        dynamicPages.add(page);
+
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeDrawer();
+                route(item);
+            }
+        });
+        return row;
+    }
+
+    /** 一条配置最终去哪：原生页 / App 内网页 / 系统浏览器 */
+    private void route(AppSidebar.Item item) {
+        if (item.target() == AppSidebar.Target.APP) {
+            int page = pageIdOf(item.page());
+            if (page != PAGE_NONE) {
+                selectPage(page);
+            } else if (!item.url().isEmpty()) {
+                // 老版本不认识这个 page，退化成打开网页，入口不丢
+                openInWeb(item.url());
+            }
+            return;
+        }
+        if (item.target() == AppSidebar.Target.EXTERNAL) {
+            openExternally(item.url());
+            return;
+        }
+        openInWeb(item.url());
+    }
+
+    private int pageIdOf(String page) {
+        if ("list".equals(page)) {
+            return PAGE_LIST;
+        }
+        if ("calendar".equals(page)) {
+            return PAGE_CALENDAR;
+        }
+        if ("web".equals(page)) {
+            return PAGE_WEB;
+        }
+        if ("login".equals(page)) {
+            return PAGE_LOGIN;
+        }
+        if ("register".equals(page)) {
+            return PAGE_REGISTER;
+        }
+        if ("settings".equals(page)) {
+            return PAGE_SETTINGS;
+        }
+        return PAGE_NONE;
+    }
+
+    private void openInWeb(String url) {
+        webController.openUrl(url);
+        selectPage(PAGE_WEB);
+    }
+
+    private void openExternally(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException ignored) {
+            // 没有浏览器就算了
+        }
     }
 
     // ------------------------------------------------------------ 导航
@@ -271,13 +423,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         for (int i = 0; i < pages.length; i++) {
             pages[i].setVisibility(i == page ? View.VISIBLE : View.GONE);
         }
-        for (int i = 0; i < navItems.length; i++) {
-            boolean active = i == page;
-            navItems[i].setTextColor(getColor(active ? R.color.accent : R.color.text_primary));
-            navItems[i].setTypeface(active
-                    ? Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                    : Typeface.create("sans-serif", Typeface.NORMAL));
-        }
+        updateNavHighlight();
 
         if (page == PAGE_CALENDAR) {
             calendarController.onShown();
@@ -295,6 +441,22 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         }
         if (page == PAGE_SETTINGS) {
             settingsController.onShown();
+        }
+    }
+
+    private void updateNavHighlight() {
+        applyHighlight(fixedRows, fixedPages);
+        applyHighlight(dynamicRows, dynamicPages);
+    }
+
+    private void applyHighlight(List<TextView> rows, List<Integer> rowPages) {
+        for (int i = 0; i < rows.size(); i++) {
+            boolean active = rowPages.get(i) == currentPage;
+            TextView row = rows.get(i);
+            row.setTextColor(getColor(active ? R.color.accent : R.color.text_primary));
+            row.setTypeface(active
+                    ? Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    : Typeface.create("sans-serif", Typeface.NORMAL));
         }
     }
 
@@ -378,6 +540,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 .format(new Date(updatedAt));
         offlineBanner.setText(getString(R.string.offline_banner, time));
         offlineBanner.setVisibility(View.VISIBLE);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     // ------------------------------------------------------------ 生命周期
