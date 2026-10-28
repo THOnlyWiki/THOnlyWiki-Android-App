@@ -41,14 +41,14 @@ import cc.thonly.app.util.AppUrls;
 public final class WebController {
 
     /**
-     * 站点在 App 里显示时去掉的两个元素：顶部 wordmark 图，以及侧栏的 logo 链接。
+     * 站点在 App 里显示时去掉的两个元素：顶部 wordmark 图，以及带水波纹的元素。
      *
-     * <p>不能直接写 {@code .mdui-ripple}——那是站点的水波纹工具类，同时挂在
-     * {@code #header-upload}（上传）和 {@code #header-search-button}（搜索）上，
-     * 按类隐藏会把工具栏一起干掉。这里只打 logo 那个链接本身。
+     * <p>{@code .mdui-ripple} 是站点的水波纹工具类，挂在 {@code #header-upload}、
+     * {@code #header-search-button} 和侧栏 logo 上，隐藏它会把这些按钮一起去掉——
+     * 这是站长确认要的效果。
      */
     private static final String APP_CHROME_CSS =
-            "#p-banner,a.mw-wiki-logo{display:none!important}";
+            "#p-banner,.mdui-ripple{display:none!important}";
 
     private static final String INJECT_CHROME_JS =
             "(function(){var id='thonly-app-chrome';"

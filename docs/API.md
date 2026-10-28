@@ -226,18 +226,17 @@ https://thonly.cc/index.php?title=WikiKernel%3ASidebar-App&action=raw
 
 App 打开站内页面时，会在**主文档到达渲染器之前**把样式插进 `<head>`
 （`shouldInterceptRequest` 里自己取 HTML、插入 `<style>` 再交给 WebView），
-所以首帧就是最终效果，不会出现「先显示完整页面再收起」的跳动。只去掉两个装饰元素：
+所以首帧就是最终效果，不会出现「先显示完整页面再收起」的跳动。
 
 ```css
-#p-banner, a.mw-wiki-logo { display: none !important; }
+#p-banner, .mdui-ripple { display: none !important; }
 ```
 
 - `#p-banner` —— 顶部那条 750×80 的 wordmark 图
-- `a.mw-wiki-logo` —— 侧栏的 logo 链接
+- `.mdui-ripple` —— 站点的水波纹工具类，挂在侧栏 logo、`#header-upload`（上传）、
+  `#header-search-button`（搜索按钮）上，隐藏它这些图标一起去掉，搜索框本身保留
 
-**不要用 `.mdui-ripple` 做选择器**：它是站点的水波纹工具类，同时挂在
-`#header-upload`（上传）和 `#header-search-button`（搜索）上，按类隐藏会把工具栏一起干掉。
-其余元素（侧栏、页脚、工具栏）一律不动。
+站长确认过这个取舍：工具栏上的图标不要，但搜索框要留。
 
 ## 七、活动增删改（App 端）
 
