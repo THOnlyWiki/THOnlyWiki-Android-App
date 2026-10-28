@@ -15,6 +15,7 @@ import java.io.IOException;
 
 import cc.thonly.app.R;
 import cc.thonly.app.data.Event;
+import cc.thonly.app.util.CalendarInserter;
 import cc.thonly.app.util.IcsDownloader;
 
 /**
@@ -81,8 +82,13 @@ public final class EventActions implements EventInteraction {
     }
 
     private void addToCalendar(Event event) {
+        // 首选：直接拉起系统日历的新建日程界面，不需要下载、不需要权限
+        if (CalendarInserter.insert(activity, event)) {
+            return;
+        }
+        // 兜底：没有日历应用（或日期不可解析）时退回下载 .ics
         if (!event.hasIcsFile()) {
-            toast(R.string.toast_no_ics);
+            toast(event.date().isResolved() ? R.string.toast_no_calendar_app : R.string.toast_no_date);
             return;
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q

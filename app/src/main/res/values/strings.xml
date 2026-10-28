@@ -44,6 +44,7 @@
     <string name="toast_copied">已复制 %1$s</string>
     <string name="toast_download_started">已保存到「下载」目录，点通知即可加入日历</string>
     <string name="toast_download_failed">下载失败，请稍后再试</string>
-    <string name="toast_no_ics">这场活动还没有日历文件</string>
+    <string name="toast_no_date">这场活动日期还没定，暂时加不了日历</string>
+    <string name="toast_no_calendar_app">手机里没有找到日历应用</string>
     <string name="toast_no_permission">没有存储权限，无法保存 .ics 文件</string>
 </resources>

@@ -8,7 +8,8 @@
 
 - 速查表：按年份、类型筛选，支持按活动名 / 地区 / 状态搜索
 - 日历：月历视图，有活动的日期带圆点，点日期看当天活动
-- 一键把单场活动加入系统日历（下载 `.ics`）
+- 点「＋日历」直接拉起系统日历的「创建日程」界面，标题、全天、日期、备注都已填好，
+  确认保存即可（不需要日历权限）；设备上没有日历应用时回退为下载 `.ics`
 - 详情弹窗可复制 QQ 群号
 - 断网时展示上一次缓存的数据
 
@@ -39,7 +40,8 @@ app/src/main/java/cc/thonly/app/
 └── util/
     ├── HttpClient.java         极简 GET
     ├── FileCache.java          文件缓存
-    └── IcsDownloader.java      .ics 下载
+    ├── CalendarInserter.java   拉起系统日历新建日程
+    └── IcsDownloader.java      .ics 下载（无日历应用时兜底）
 ```
 
 分层原则：`ui` 不碰网络，`data` 不碰 Android UI，`util` 不依赖业务。
