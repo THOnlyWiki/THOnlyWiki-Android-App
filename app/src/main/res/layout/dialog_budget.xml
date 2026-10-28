@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="4dp">
+
+        <EditText
+            android:id="@+id/budgetTicket"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_search"
+            android:hint="@string/budget_ticket"
+            android:inputType="numberDecimal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/budgetTravel"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_search"
+            android:hint="@string/budget_travel"
+            android:inputType="numberDecimal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/budgetHotel"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_search"
+            android:hint="@string/budget_hotel"
+            android:inputType="numberDecimal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/budgetOther"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_search"
+            android:hint="@string/budget_other"
+            android:inputType="numberDecimal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/budgetPeople"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_search"
+            android:hint="@string/budget_people"
+            android:inputType="number"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:singleLine="true"
+            android:text="1"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_tertiary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/budgetResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/budget_result_empty"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</ScrollView>

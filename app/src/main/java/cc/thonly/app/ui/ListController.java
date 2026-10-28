@@ -22,6 +22,7 @@ import cc.thonly.app.data.EventCategory;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventDate;
 import cc.thonly.app.data.EventStore;
+import cc.thonly.app.data.Favorites;
 
 /** 速查表页：年份 / 类型两个下拉筛选 + 关键字搜索 + 列表。 */
 public final class ListController implements EventStore.Listener {
@@ -37,6 +38,7 @@ public final class ListController implements EventStore.Listener {
     private final TextView emptyLabel;
     private final TextView editToggle;
     private final TextView addButton;
+    private final TextView favoriteToggle;
     private final ListView listView;
     private final EventInteraction hostInteraction;
     private final EventEditDialog editDialog;
@@ -54,6 +56,9 @@ public final class ListController implements EventStore.Listener {
     private Runnable sessionExpiredHandler;
     /** 编辑模式：点条目打开编辑弹窗，右上角出现「新增」 */
     private boolean editMode;
+    /** 只看关注 */
+    private boolean onlyFavorites;
+    private Favorites favorites;
 
     public ListController(Activity activity, View root, EventStore store, EventInteraction interaction,
                           ActivityEditor editor) {
@@ -69,6 +74,7 @@ public final class ListController implements EventStore.Listener {
         this.emptyLabel = root.findViewById(R.id.listEmpty);
         this.editToggle = root.findViewById(R.id.editToggle);
         this.addButton = root.findViewById(R.id.addButton);
+        this.favoriteToggle = root.findViewById(R.id.favoriteToggle);
         this.selectedYear = Calendar.getInstance().get(Calendar.YEAR);
         this.editDialog = new EventEditDialog(activity, editor, new EventEditDialog.Listener() {
             @Override
@@ -332,9 +338,35 @@ public final class ListController implements EventStore.Listener {
         }
         renderRegionSpinner(data);
         List<Event> events = data.filter(categoryFilter, keyword, selectedRegion());
+        if (onlyFavorites && favorites != null) {
+            List<Event> onlyFavoritesList = new ArrayList<Event>();
+            for (Event event : events) {
+                if (favorites.isFavorite(selectedYear, event.id())) {
+                    onlyFavoritesList.add(event);
+                }
+            }
+            events = onlyFavoritesList;
+        }
+        // 年份可能变了，星标要用当年的 key
+        adapter.setFavoriteContext(favorites, selectedYear, favoriteListener);
         adapter.submit(events);
         updateCountLabel(events.size());
+        updateFavoriteToggle();
+
+        emptyLabel.setText(onlyFavorites ? R.string.favorite_empty : R.string.empty_list);
         emptyLabel.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateFavoriteToggle() {
+        int count = favorites == null ? 0 : favorites.count();
+        if (count == 0 && !onlyFavorites) {
+            favoriteToggle.setVisibility(View.GONE);
+            return;
+        }
+        favoriteToggle.setVisibility(View.VISIBLE);
+        favoriteToggle.setText(activity.getString(R.string.favorite_count, count));
+        favoriteToggle.setTextColor(activity.getColor(
+                onlyFavorites ? R.color.accent : R.color.text_secondary));
     }
 
     private void updateCountLabel(int count) {
@@ -360,6 +392,28 @@ public final class ListController implements EventStore.Listener {
     public void setOnSessionExpired(Runnable handler) {
         this.sessionExpiredHandler = handler;
     }
+
+    /** 注入关注列表；星标只在速查表页显示 */
+    public void setFavorites(Favorites favorites) {
+        this.favorites = favorites;
+        adapter.setFavoriteContext(favorites, selectedYear, favoriteListener);
+        adapter.setFavoriteEnabled(true);
+        favoriteToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onlyFavorites = !onlyFavorites;
+                applyFilter();
+            }
+        });
+    }
+
+    private final EventAdapter.OnFavoriteListener favoriteListener =
+            new EventAdapter.OnFavoriteListener() {
+                @Override
+                public void onFavoriteChanged() {
+                    applyFilter();
+                }
+            };
 
     private void toggleEditMode() {
         editMode = !editMode;

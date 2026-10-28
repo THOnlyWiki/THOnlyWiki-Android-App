@@ -43,6 +43,20 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/star"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="4dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/favorite"
+        android:gravity="center"
+        android:text="★"
+        android:textColor="@color/text_tertiary"
+        android:textSize="17sp"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/action"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

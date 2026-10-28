@@ -29,6 +29,7 @@ import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
+import cc.thonly.app.data.Favorites;
 import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.SidebarRepository;
@@ -56,6 +57,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_LOGIN = 3;
     private static final int PAGE_REGISTER = 4;
     private static final int PAGE_SETTINGS = 5;
+    private static final int PAGE_TOOLBOX = 6;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -81,6 +83,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private LoginController loginController;
     private RegisterController registerController;
     private SettingsController settingsController;
+    private ToolboxController toolboxController;
 
     private View[] pages;
     private View scrim;
@@ -131,13 +134,16 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View loginPage = getLayoutInflater().inflate(R.layout.view_login, content, false);
         View registerPage = getLayoutInflater().inflate(R.layout.view_register, content, false);
         View settingsPage = getLayoutInflater().inflate(R.layout.view_settings, content, false);
+        View toolboxPage = getLayoutInflater().inflate(R.layout.view_toolbox, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
         content.addView(loginPage);
         content.addView(registerPage);
         content.addView(settingsPage);
-        pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage, settingsPage};
+        content.addView(toolboxPage);
+        pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
+                settingsPage, toolboxPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -148,12 +154,14 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 onSessionChanged();
             }
         });
+        listController.setFavorites(new Favorites(this));
         calendarController = new CalendarController(this, calendarPage, store, actions);
         webController = new WebController(this, webPage);
         loginController = new LoginController(this, loginPage, session, this);
         registerController = new RegisterController(this, registerPage, session, this);
         settingsController = new SettingsController(this, settingsPage, settings,
                 updateChecker, currentVersion, cache);
+        toolboxController = new ToolboxController(this, toolboxPage);
         store.addListener(listController);
         store.addListener(calendarController);
         store.addListener(this);
@@ -245,6 +253,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
         bindNavRow(R.id.navList, PAGE_LIST);
         bindNavRow(R.id.navCalendar, PAGE_CALENDAR);
+        bindNavRow(R.id.navToolbox, PAGE_TOOLBOX);
         bindNavRow(R.id.navWeb, PAGE_WEB);
         bindNavRow(R.id.navLogin, PAGE_LOGIN);
         bindNavRow(R.id.navRegister, PAGE_REGISTER);
@@ -493,6 +502,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         }
         if (page == PAGE_SETTINGS) {
             settingsController.onShown();
+        }
+        if (page == PAGE_TOOLBOX) {
+            toolboxController.onShown();
         }
     }
 

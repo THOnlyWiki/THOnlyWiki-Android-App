@@ -122,6 +122,24 @@
     <string name="settings_export_log_chooser">分享日志文件</string>
     <string name="toast_no_share_app">没有可以分享的应用</string>
     <string name="session_expired">登录状态已失效，请重新登录后再编辑</string>
+    <string name="favorite">关注</string>
+    <string name="favorite_count">★ %1$d</string>
+    <string name="favorite_added">已关注</string>
+    <string name="favorite_removed">已取消关注</string>
+    <string name="favorite_only">只看关注</string>
+    <string name="favorite_empty">还没有关注的活动\n点列表右侧的 ★ 就能关注</string>
+
+    <string name="nav_toolbox">百宝箱</string>
+    <string name="toolbox_group_tools">工具</string>
+    <string name="tool_budget_title">预算分摊</string>
+    <string name="tool_budget_desc">门票、交通、住宿加起来，按人数均摊</string>
+    <string name="budget_ticket">门票（元）</string>
+    <string name="budget_travel">交通（元）</string>
+    <string name="budget_hotel">住宿（元）</string>
+    <string name="budget_other">其他（元）</string>
+    <string name="budget_people">人数</string>
+    <string name="budget_result">合计 %1$s 元 · 人均 %2$s 元</string>
+    <string name="budget_result_empty">填几项金额就能算出来</string>
     <string name="settings_about">东方Project线下活动维基 %1$s\n开发者：稀神灵梦\nthonly.cc 官方客户端</string>
 
     <string name="update_checking">正在检查更新…</string>

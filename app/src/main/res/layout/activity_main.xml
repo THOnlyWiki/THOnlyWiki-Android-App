@@ -159,6 +159,11 @@
                         android:id="@+id/navCalendar"
                         style="@style/NavItem"
                         android:text="@string/tab_calendar" />
+
+                    <TextView
+                        android:id="@+id/navToolbox"
+                        style="@style/NavItem"
+                        android:text="@string/nav_toolbox" />
                 </LinearLayout>
 
                 <LinearLayout

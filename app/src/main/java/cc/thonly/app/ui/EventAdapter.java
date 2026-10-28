@@ -6,21 +6,33 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import cc.thonly.app.R;
 import cc.thonly.app.data.Event;
+import cc.thonly.app.data.Favorites;
 
 /** 活动列表适配器，速查表和日历页共用。 */
 public final class EventAdapter extends BaseAdapter {
+
+    /** 关注状态变了，列表需要重新统计/过滤 */
+    public interface OnFavoriteListener {
+        void onFavoriteChanged();
+    }
 
     private final Context context;
     private final EventInteraction interaction;
     private final List<Event> items = new ArrayList<Event>();
     /** 编辑模式下整行都是「修改」入口，右侧的「＋日历」先收起来免得误触 */
     private boolean editMode;
+
+    private Favorites favorites;
+    private int year;
+    private boolean favoriteEnabled;
+    private OnFavoriteListener favoriteListener;
 
     public EventAdapter(Context context, EventInteraction interaction) {
         this.context = context;
@@ -33,6 +45,21 @@ public final class EventAdapter extends BaseAdapter {
         }
         this.editMode = editMode;
         notifyDataSetChanged();
+    }
+
+    /** 只有速查表页显示星标，日历页不显示 */
+    public void setFavoriteEnabled(boolean enabled) {
+        if (this.favoriteEnabled == enabled) {
+            return;
+        }
+        this.favoriteEnabled = enabled;
+        notifyDataSetChanged();
+    }
+
+    public void setFavoriteContext(Favorites favorites, int year, OnFavoriteListener listener) {
+        this.favorites = favorites;
+        this.year = year;
+        this.favoriteListener = listener;
     }
 
     public void submit(List<Event> events) {
@@ -81,12 +108,14 @@ public final class EventAdapter extends BaseAdapter {
         private final TextView nameView;
         private final TextView metaView;
         private final TextView actionView;
+        private final TextView starView;
 
         ViewHolder(View root) {
             statusBar = root.findViewById(R.id.bar);
             nameView = root.findViewById(R.id.name);
             metaView = root.findViewById(R.id.meta);
             actionView = root.findViewById(R.id.action);
+            starView = root.findViewById(R.id.star);
         }
 
         void bind(final Event event, final EventInteraction interaction) {
@@ -103,6 +132,31 @@ public final class EventAdapter extends BaseAdapter {
                 @Override
                 public void onClick(View v) {
                     interaction.onAddToCalendar(event);
+                }
+            });
+
+            bindStar(event);
+        }
+
+        private void bindStar(final Event event) {
+            if (!favoriteEnabled || favorites == null) {
+                starView.setVisibility(View.GONE);
+                return;
+            }
+            starView.setVisibility(View.VISIBLE);
+            starView.setTextColor(context.getColor(
+                    favorites.isFavorite(year, event.id()) ? R.color.accent : R.color.text_tertiary));
+            starView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    boolean nowFavorite = favorites.toggle(year, event.id());
+                    Toast.makeText(context,
+                            nowFavorite ? R.string.favorite_added : R.string.favorite_removed,
+                            Toast.LENGTH_SHORT).show();
+                    notifyDataSetChanged();
+                    if (favoriteListener != null) {
+                        favoriteListener.onFavoriteChanged();
+                    }
                 }
             });
         }
