@@ -8,13 +8,14 @@
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
-    <style name="TabItem">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">match_parent</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textColor">@color/text_secondary</item>
+    <style name="NavItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/nav_item_height</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_primary</item>
         <item name="android:background">?android:attr/selectableItemBackground</item>
     </style>
 

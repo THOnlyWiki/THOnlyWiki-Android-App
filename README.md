@@ -1,4 +1,4 @@
-# 东方活动速查 · Android
+# 东方Project线下活动日程 · Android
 
 [thonly.cc](https://thonly.cc)（东方Project线下活动维基）的安卓客户端。
 
@@ -7,11 +7,13 @@
 ## 功能
 
 - 速查表：按年份、类型筛选，支持按活动名 / 地区 / 状态搜索
+- 年份列表由服务端返回的年份 + 手机当前年份起两年自动合并，跨年后不会断档
 - 日历：月历视图，有活动的日期带圆点，点日期看当天活动
 - 点「＋日历」直接拉起系统日历的「创建日程」界面，标题、全天、日期、备注都已填好，
   确认保存即可（不需要日历权限）；设备上没有日历应用时回退为下载 `.ics`
 - 详情弹窗可复制 QQ 群号
 - 断网时展示上一次缓存的数据
+- 导航用右侧抽屉，加页面只需往里加条目，不用改布局
 
 ## 目录结构
 
@@ -29,9 +31,9 @@ app/src/main/java/cc/thonly/app/
 │   ├── EventStore.java         状态容器：异步加载 + 观察者通知
 │   └── EventApiException.java
 ├── ui/                         界面层
-│   ├── MainActivity.java       只做装配，不含业务
+│   ├── MainActivity.java       装配：抽屉导航 + 两个页面控制器
 │   ├── ListController.java     速查表页逻辑
-│   ├── CalendarController.java 日历页逻辑
+│   ├── CalendarController.java 日历页逻辑（跟随 store 年份，不抢年份）
 │   ├── EventAdapter.java       列表适配器（两页共用）
 │   ├── EventActions.java       详情弹窗 / 加日历 / 复制群号
 │   ├── EventInteraction.java   列表项操作接口
@@ -46,6 +48,12 @@ app/src/main/java/cc/thonly/app/
 
 分层原则：`ui` 不碰网络，`data` 不碰 Android UI，`util` 不依赖业务。
 两个页面共用一个 `EventStore`，切换年份只发一次请求。
+
+## 图标
+
+`app/src/main/res/mipmap-*` 由 `D:\wwwroot\Touhou_Activities_Wiki_Logo.svg` 渲染而来：
+无头 Chromium 转 PNG 后，用 ImageMagick 生成各密度图标与自适应图标前景。
+API 26+ 走 `mipmap-anydpi-v26/ic_launcher.xml` 的自适应图标，低版本用方形 PNG 兜底。
 
 ## 构建
 

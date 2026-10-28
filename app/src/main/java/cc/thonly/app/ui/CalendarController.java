@@ -15,7 +15,13 @@ import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
 
-/** 日历页：月历网格 + 选中日期的活动列表。 */
+/**
+ * 日历页：月历网格 + 选中日期的活动列表。
+ *
+ * <p>年份策略：日历跟随 {@link EventStore} 里的年份，不主动去抢。
+ * 只有用户主动翻月跨到别的年份时，才发起一次加载。
+ * （早期版本在数据回调里无条件回拉自己那一年，导致列表切到 2025 又被拽回 2026。）
+ */
 public final class CalendarController implements EventStore.Listener, MonthView.OnDaySelectedListener {
 
     private final Activity activity;
@@ -29,8 +35,7 @@ public final class CalendarController implements EventStore.Listener, MonthView.
     private int year;
     private int month;
     private int day;
-    /** 已经为哪一年发过请求，避免数据年份对不上时反复请求 */
-    private int requestedYear;
+    private boolean visible;
 
     public CalendarController(Activity activity, View root, EventStore store,
                               EventInteraction interaction) {
@@ -49,7 +54,6 @@ public final class CalendarController implements EventStore.Listener, MonthView.
         year = now.get(Calendar.YEAR);
         month = now.get(Calendar.MONTH) + 1;
         day = now.get(Calendar.DAY_OF_MONTH);
-        requestedYear = year;
 
         monthView.setListener(this);
         root.findViewById(R.id.prevMonth).setOnClickListener(new View.OnClickListener() {
@@ -66,28 +70,34 @@ public final class CalendarController implements EventStore.Listener, MonthView.
         });
     }
 
-    /** 切到日历页时刷新一次 */
+    /** 页面可见时才响应数据变化，避免在后台和列表抢年份 */
     public void onShown() {
+        visible = true;
+        followStoreYear();
         refresh();
+    }
+
+    public void onHidden() {
+        visible = false;
     }
 
     @Override
     public void onLoadingStarted(int year) {
-        requestedYear = year;
+        // 加载中的状态由列表页展示，这里不需要额外处理
     }
 
     @Override
     public void onDataLoaded(EventData data) {
-        if (data.year() != year) {
-            requestYear(year);
+        if (!visible) {
             return;
         }
+        followStoreYear();
         refresh();
     }
 
     @Override
     public void onLoadFailed(int year, EventApiException error) {
-        // 列表页负责展示失败提示，这里保持上次内容即可
+        // 失败提示由列表页负责，日历保持上一次的显示
     }
 
     @Override
@@ -98,7 +108,17 @@ public final class CalendarController implements EventStore.Listener, MonthView.
         showDayEvents(eventsOn(month, day));
     }
 
+    private void followStoreYear() {
+        EventData data = store.current();
+        if (data == null || data.year() <= 0 || data.year() == year) {
+            return;
+        }
+        year = data.year();
+        day = Math.min(day, maxDayOf(year, month));
+    }
+
     private void shiftMonth(int delta) {
+        int previousYear = year;
         month += delta;
         if (month < 1) {
             month = 12;
@@ -108,23 +128,26 @@ public final class CalendarController implements EventStore.Listener, MonthView.
             year += 1;
         }
         day = Math.min(day, maxDayOf(year, month));
+
+        // 用户主动翻到了别的年份，才去拉那一年的数据
+        if (year != previousYear) {
+            store.load(year, false);
+        }
         refresh();
     }
 
     private void refresh() {
-        EventData data = store.current();
         monthTitle.setText(activity.getString(R.string.month_title, year, month));
+        monthView.setMonth(year, month);
 
+        EventData data = store.current();
         if (data == null || data.year() != year) {
-            requestYear(year);
-            monthView.setMonth(year, month);
             monthView.setMarkedDays(null);
             monthView.setSelectedDay(day);
             showDayEvents(Collections.<Event>emptyList());
             return;
         }
 
-        monthView.setMonth(year, month);
         monthView.setMarkedDays(data.markedDaysOf(month));
         monthView.setSelectedDay(day);
         showDayEvents(data.eventsOn(month, day));
@@ -142,14 +165,6 @@ public final class CalendarController implements EventStore.Listener, MonthView.
             return Collections.emptyList();
         }
         return data.eventsOn(month, day);
-    }
-
-    private void requestYear(int target) {
-        if (requestedYear == target) {
-            return;
-        }
-        requestedYear = target;
-        store.load(target, false);
     }
 
     private static int maxDayOf(int year, int month) {

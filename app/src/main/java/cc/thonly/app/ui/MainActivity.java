@@ -1,6 +1,8 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -16,14 +18,17 @@ import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.util.FileCache;
 
 /**
- * 应用入口，只负责装配：创建数据仓库、两个页面控制器、底部导航。
+ * 应用入口，只负责装配：数据仓库、两个页面控制器、右侧导航抽屉。
  * 具体业务都在 {@link ListController} 和 {@link CalendarController} 里。
+ *
+ * <p>导航用右侧抽屉而不是底部标签栏，页面多了直接往里加条目即可，不用改布局。
  */
 public final class MainActivity extends Activity {
 
-    private static final int TAB_LIST = 0;
-    private static final int TAB_CALENDAR = 1;
+    private static final int PAGE_LIST = 0;
+    private static final int PAGE_CALENDAR = 1;
     private static final String CACHE_DIR_NAME = "activity";
+    private static final long DRAWER_ANIMATION_MS = 200L;
 
     private EventStore store;
     private EventActions actions;
@@ -32,8 +37,13 @@ public final class MainActivity extends Activity {
 
     private View listPage;
     private View calendarPage;
-    private TextView[] tabViews;
-    private int currentTab = TAB_LIST;
+    private View scrim;
+    private View drawer;
+    private TextView[] navItems;
+
+    private int currentPage = PAGE_LIST;
+    private boolean drawerOpen;
+    private int drawerWidth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,46 +65,121 @@ public final class MainActivity extends Activity {
         store.addListener(listController);
         store.addListener(calendarController);
 
-        bindTabs();
+        bindHeader();
+        bindDrawer();
+
+        selectPage(PAGE_LIST);
+        store.load(currentYear(), false);
+    }
+
+    private void bindHeader() {
+        findViewById(R.id.menuButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleDrawer();
+            }
+        });
         findViewById(R.id.refresh).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 store.reload();
             }
         });
-
-        selectTab(TAB_LIST);
-        store.load(currentYear(), false);
     }
 
-    private void bindTabs() {
-        tabViews = new TextView[]{
-                findViewById(R.id.tab0),
-                findViewById(R.id.tab1)
+    private void bindDrawer() {
+        drawer = findViewById(R.id.drawer);
+        scrim = findViewById(R.id.scrim);
+        drawerWidth = getResources().getDimensionPixelSize(R.dimen.drawer_width);
+        drawer.setTranslationX(drawerWidth);
+
+        scrim.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeDrawer();
+            }
+        });
+
+        navItems = new TextView[]{
+                findViewById(R.id.navList),
+                findViewById(R.id.navCalendar)
         };
-        for (int i = 0; i < tabViews.length; i++) {
-            final int index = i;
-            tabViews[i].setOnClickListener(new View.OnClickListener() {
+        for (int i = 0; i < navItems.length; i++) {
+            final int page = i;
+            navItems[i].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    selectTab(index);
+                    selectPage(page);
+                    closeDrawer();
                 }
             });
         }
+
+        TextView versionLabel = findViewById(R.id.navVersion);
+        versionLabel.setText(getString(R.string.version_label, versionName()));
     }
 
-    private void selectTab(int index) {
-        currentTab = index;
-        listPage.setVisibility(index == TAB_LIST ? View.VISIBLE : View.GONE);
-        calendarPage.setVisibility(index == TAB_CALENDAR ? View.VISIBLE : View.GONE);
+    private String versionName() {
+        try {
+            String name = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            return name == null ? "" : name;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        }
+    }
 
-        for (int i = 0; i < tabViews.length; i++) {
-            boolean active = i == index;
-            tabViews[i].setTextColor(getColor(active ? R.color.accent : R.color.text_secondary));
-            tabViews[i].setSelected(active);
+    private void toggleDrawer() {
+        if (drawerOpen) {
+            closeDrawer();
+        } else {
+            openDrawer();
+        }
+    }
+
+    private void openDrawer() {
+        if (drawerOpen) {
+            return;
+        }
+        drawerOpen = true;
+        scrim.setVisibility(View.VISIBLE);
+        scrim.setAlpha(0f);
+        drawer.animate().translationX(0f).setDuration(DRAWER_ANIMATION_MS).start();
+        scrim.animate().alpha(1f).setDuration(DRAWER_ANIMATION_MS).start();
+    }
+
+    private void closeDrawer() {
+        if (!drawerOpen) {
+            return;
+        }
+        drawerOpen = false;
+        drawer.animate().translationX(drawerWidth).setDuration(DRAWER_ANIMATION_MS).start();
+        scrim.animate().alpha(0f).setDuration(DRAWER_ANIMATION_MS).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                if (!drawerOpen) {
+                    scrim.setVisibility(View.GONE);
+                }
+            }
+        }).start();
+    }
+
+    private void selectPage(int page) {
+        currentPage = page;
+        boolean listVisible = page == PAGE_LIST;
+        listPage.setVisibility(listVisible ? View.VISIBLE : View.GONE);
+        calendarPage.setVisibility(listVisible ? View.GONE : View.VISIBLE);
+
+        for (int i = 0; i < navItems.length; i++) {
+            boolean active = i == page;
+            navItems[i].setTextColor(getColor(active ? R.color.accent : R.color.text_primary));
+            navItems[i].setTypeface(active
+                    ? Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    : Typeface.create("sans-serif", Typeface.NORMAL));
         }
 
-        if (index == TAB_CALENDAR) {
+        if (listVisible) {
+            calendarController.onHidden();
+        } else {
             calendarController.onShown();
         }
     }
@@ -111,9 +196,15 @@ public final class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && currentTab == TAB_CALENDAR) {
-            selectTab(TAB_LIST);
-            return true;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (drawerOpen) {
+                closeDrawer();
+                return true;
+            }
+            if (currentPage == PAGE_CALENDAR) {
+                selectPage(PAGE_LIST);
+                return true;
+            }
         }
         return super.onKeyDown(keyCode, event);
     }

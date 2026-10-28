@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">东方活动速查</string>
+    <string name="app_name">东方Project线下活动日程</string>
 
+    <string name="menu">菜单</string>
     <string name="refresh">刷新</string>
+    <string name="version_label">版本 %1$s</string>
     <string name="tab_list">速查表</string>
     <string name="tab_calendar">日历</string>
 

@@ -3,6 +3,7 @@
     <color name="page_bg">#FFFFFFFF</color>
     <color name="tabbar_bg">#FFFFFFFF</color>
     <color name="divider">#14000000</color>
+    <color name="scrim">#66000000</color>
 
     <color name="text_primary">#2C2C2A</color>
     <color name="text_secondary">#888780</color>
@@ -19,4 +20,6 @@
     <color name="status_postponed">#BA7517</color>
     <color name="status_cancelled">#A32D2D</color>
     <color name="status_unknown">#B4B2A9</color>
+
+    <color name="ic_launcher_background">#FFFFFFFF</color>
 </resources>
