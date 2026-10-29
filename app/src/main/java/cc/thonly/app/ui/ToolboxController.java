@@ -17,23 +17,27 @@ import cc.thonly.app.data.Checklist;
 public final class ToolboxController {
 
     private final Activity activity;
+    private boolean firstInGroup = true;
 
     public ToolboxController(final Activity activity, View root, final Runnable openMusic) {
         this.activity = activity;
         LinearLayout list = root.findViewById(R.id.toolList);
 
-        addCard(list, R.string.tool_music_title, R.string.tool_music_desc,
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openMusic.run();
-                    }
-                });
+        addGroupTitle(list, R.string.toolbox_group_tools);
         addCard(list, R.string.tool_budget_title, R.string.tool_budget_desc,
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         BudgetDialog.show(activity);
+                    }
+                });
+
+        addGroupTitle(list, R.string.toolbox_group_content);
+        addCard(list, R.string.tool_music_title, R.string.tool_music_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openMusic.run();
                     }
                 });
         addCard(list, R.string.tool_fortune_title, R.string.tool_fortune_desc,
@@ -43,6 +47,8 @@ public final class ToolboxController {
                         FortuneDialog.show(activity);
                     }
                 });
+
+        addGroupTitle(list, R.string.toolbox_group_memo);
         addCard(list, R.string.tool_packing_title, R.string.tool_packing_desc,
                 new View.OnClickListener() {
                     @Override
@@ -65,11 +71,21 @@ public final class ToolboxController {
         // 目前没有需要刷新的状态
     }
 
+    /** 分组标题：每组第一张卡片前面不加分隔线 */
+    private void addGroupTitle(LinearLayout list, int titleRes) {
+        View title = LayoutInflater.from(activity)
+                .inflate(R.layout.item_tool_group, list, false);
+        ((TextView) title).setText(titleRes);
+        list.addView(title);
+        firstInGroup = true;
+    }
+
     private void addCard(LinearLayout list, int titleRes, int descRes,
                          View.OnClickListener click) {
-        if (list.getChildCount() > 0) {
+        if (!firstInGroup) {
             list.addView(createDivider());
         }
+        firstInGroup = false;
         View card = LayoutInflater.from(activity)
                 .inflate(R.layout.item_tool_card, list, false);
         ((TextView) card.findViewById(R.id.cardTitle)).setText(titleRes);
