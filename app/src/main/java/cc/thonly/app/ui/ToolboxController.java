@@ -16,11 +16,19 @@ import cc.thonly.app.data.Checklist;
  */
 public final class ToolboxController {
 
+    /** 百宝箱里的功能页跳转，由 MainActivity 实现 */
+    public interface Navigator {
+        void openMusic();
+
+        void openGlossary();
+
+        void openItinerary();
+    }
+
     private final Activity activity;
     private boolean firstInGroup = true;
 
-    public ToolboxController(final Activity activity, View root, final Runnable openMusic,
-                             final Runnable openGlossary) {
+    public ToolboxController(final Activity activity, View root, final Navigator navigator) {
         this.activity = activity;
         LinearLayout list = root.findViewById(R.id.toolList);
 
@@ -43,7 +51,7 @@ public final class ToolboxController {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        openGlossary.run();
+                        navigator.openGlossary();
                     }
                 });
 
@@ -52,7 +60,7 @@ public final class ToolboxController {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        openMusic.run();
+                        navigator.openMusic();
                     }
                 });
         addCard(list, R.string.tool_fortune_title, R.string.tool_fortune_desc,
@@ -60,6 +68,13 @@ public final class ToolboxController {
                     @Override
                     public void onClick(View v) {
                         FortuneDialog.show(activity);
+                    }
+                });
+        addCard(list, R.string.tool_itinerary_title, R.string.tool_itinerary_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        navigator.openItinerary();
                     }
                 });
 

@@ -178,6 +178,18 @@
     <string name="tool_glossary_desc">THO、痛包、谷子…圈内黑话速查</string>
     <string name="glossary_search_hint">搜索术语或释义</string>
     <string name="glossary_empty">没找到相关术语</string>
+
+    <string name="tool_itinerary_title">我的行程</string>
+    <string name="tool_itinerary_desc">关注的活动排成时间线，带倒计时</string>
+    <string name="itinerary_empty">还没有关注的活动\n在速查表点 ★ 就能加进行程</string>
+    <string name="itinerary_no_upcoming">暂无即将开始</string>
+    <string name="itinerary_no_upcoming_hint">关注的活动都已经结束了，去速查表看看新的</string>
+    <string name="itinerary_today">就是今天</string>
+    <string name="itinerary_days_left">还有 %1$d 天</string>
+    <string name="itinerary_meta">%1$s · %2$s</string>
+    <string name="itinerary_same_day">同日 %1$d 场</string>
+    <string name="countdown_line">距 %1$s 还有 %2$d 天 ›</string>
+    <string name="countdown_today">今天就是 %1$s ›</string>
     <string name="checklist_clear">全部取消</string>
     <string name="checklist_add">＋ 添加一项</string>
     <string name="checklist_new_item">新建条目</string>

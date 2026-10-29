@@ -149,7 +149,7 @@ public final class EventAdapter extends BaseAdapter {
             starView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    boolean nowFavorite = favorites.toggle(year, event.id());
+                    boolean nowFavorite = favorites.toggle(year, event);
                     Toast.makeText(context,
                             nowFavorite ? R.string.favorite_added : R.string.favorite_removed,
                             Toast.LENGTH_SHORT).show();

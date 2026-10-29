@@ -22,6 +22,7 @@ import cc.thonly.app.data.EventCategory;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventDate;
 import cc.thonly.app.data.EventStore;
+import cc.thonly.app.data.FavoriteEvent;
 import cc.thonly.app.data.Favorites;
 
 /** 速查表页：年份 / 类型两个下拉筛选 + 关键字搜索 + 列表。 */
@@ -39,6 +40,7 @@ public final class ListController implements EventStore.Listener {
     private final TextView editToggle;
     private final TextView addButton;
     private final TextView favoriteToggle;
+    private final TextView countdownView;
     private final ListView listView;
     private final EventInteraction hostInteraction;
     private final EventEditDialog editDialog;
@@ -59,6 +61,7 @@ public final class ListController implements EventStore.Listener {
     /** 只看关注 */
     private boolean onlyFavorites;
     private Favorites favorites;
+    private Runnable openItinerary;
 
     public ListController(Activity activity, View root, EventStore store, EventInteraction interaction,
                           ActivityEditor editor) {
@@ -75,6 +78,7 @@ public final class ListController implements EventStore.Listener {
         this.editToggle = root.findViewById(R.id.editToggle);
         this.addButton = root.findViewById(R.id.addButton);
         this.favoriteToggle = root.findViewById(R.id.favoriteToggle);
+        this.countdownView = root.findViewById(R.id.listCountdown);
         this.selectedYear = Calendar.getInstance().get(Calendar.YEAR);
         this.editDialog = new EventEditDialog(activity, editor, new EventEditDialog.Listener() {
             @Override
@@ -157,6 +161,12 @@ public final class ListController implements EventStore.Listener {
 
     @Override
     public void onDataLoaded(EventData data) {
+        // 老版本只存了 id 的关注，这里补上快照，「我的行程」才有内容
+        if (favorites != null) {
+            for (Event event : data.events()) {
+                favorites.backfill(data.year(), event);
+            }
+        }
         renderYearSpinner();
         applyFilter();
         if (pendingScrollToToday) {
@@ -355,6 +365,62 @@ public final class ListController implements EventStore.Listener {
 
         emptyLabel.setText(onlyFavorites ? R.string.favorite_empty : R.string.empty_list);
         emptyLabel.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+        updateCountdown();
+    }
+
+    /**
+     * 顶部那行倒计时：优先用关注里最近的一场，没关注就用当年最近的一场。
+     */
+    private void updateCountdown() {
+        if (favorites != null) {
+            for (FavoriteEvent favorite : favorites.list()) {
+                if (favorite.isUpcoming() && !favorite.isCancelled()) {
+                    showCountdown(favorite.name(), favorite.daysUntil());
+                    return;
+                }
+            }
+        }
+        EventData current = store.current();
+        if (current == null) {
+            countdownView.setVisibility(View.GONE);
+            return;
+        }
+        Event nearest = null;
+        long nearestDays = Long.MAX_VALUE;
+        for (Event event : current.events()) {
+            if (!event.date().isResolved() || event.status().isCancelled()) {
+                continue;
+            }
+            long days = daysUntil(event.date());
+            if (days >= 0 && days < nearestDays) {
+                nearestDays = days;
+                nearest = event;
+            }
+        }
+        if (nearest == null) {
+            countdownView.setVisibility(View.GONE);
+            return;
+        }
+        showCountdown(nearest.name(), nearestDays);
+    }
+
+    private void showCountdown(String name, long days) {
+        countdownView.setText(days == 0
+                ? activity.getString(R.string.countdown_today, name)
+                : activity.getString(R.string.countdown_line, name, days));
+        countdownView.setVisibility(View.VISIBLE);
+    }
+
+    private static long daysUntil(EventDate date) {
+        Calendar target = Calendar.getInstance();
+        target.set(date.year(), date.month() - 1, date.day(), 0, 0, 0);
+        target.set(Calendar.MILLISECOND, 0);
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        return Math.round((target.getTimeInMillis() - today.getTimeInMillis()) / 86400000.0);
     }
 
     private void updateFavoriteToggle() {
@@ -403,6 +469,19 @@ public final class ListController implements EventStore.Listener {
             public void onClick(View v) {
                 onlyFavorites = !onlyFavorites;
                 applyFilter();
+            }
+        });
+    }
+
+    /** 顶部倒计时那行点了去哪 */
+    public void setOnOpenItinerary(Runnable handler) {
+        this.openItinerary = handler;
+        countdownView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (openItinerary != null) {
+                    openItinerary.run();
+                }
             }
         });
     }

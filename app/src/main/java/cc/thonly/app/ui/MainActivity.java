@@ -62,6 +62,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_TOOLBOX = 6;
     private static final int PAGE_MUSIC = 7;
     private static final int PAGE_GLOSSARY = 8;
+    private static final int PAGE_ITINERARY = 9;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -90,6 +91,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private ToolboxController toolboxController;
     private MusicController musicController;
     private GlossaryController glossaryController;
+    private ItineraryController itineraryController;
 
     private View[] pages;
     private View scrim;
@@ -144,6 +146,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View toolboxPage = getLayoutInflater().inflate(R.layout.view_toolbox, content, false);
         View musicPage = getLayoutInflater().inflate(R.layout.view_music, content, false);
         View glossaryPage = getLayoutInflater().inflate(R.layout.view_glossary, content, false);
+        View itineraryPage = getLayoutInflater().inflate(R.layout.view_itinerary, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
@@ -153,8 +156,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(toolboxPage);
         content.addView(musicPage);
         content.addView(glossaryPage);
+        content.addView(itineraryPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
-                settingsPage, toolboxPage, musicPage, glossaryPage};
+                settingsPage, toolboxPage, musicPage, glossaryPage, itineraryPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -172,19 +176,31 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         registerController = new RegisterController(this, registerPage, session, this);
         settingsController = new SettingsController(this, settingsPage, settings,
                 updateChecker, currentVersion, cache);
-        toolboxController = new ToolboxController(this, toolboxPage, new Runnable() {
+        toolboxController = new ToolboxController(this, toolboxPage, new ToolboxController.Navigator() {
             @Override
-            public void run() {
+            public void openMusic() {
                 selectPage(PAGE_MUSIC);
             }
-        }, new Runnable() {
+
             @Override
-            public void run() {
+            public void openGlossary() {
                 selectPage(PAGE_GLOSSARY);
+            }
+
+            @Override
+            public void openItinerary() {
+                selectPage(PAGE_ITINERARY);
             }
         });
         musicController = new MusicController(this, musicPage);
         glossaryController = new GlossaryController(this, glossaryPage);
+        itineraryController = new ItineraryController(this, itineraryPage);
+        listController.setOnOpenItinerary(new Runnable() {
+            @Override
+            public void run() {
+                selectPage(PAGE_ITINERARY);
+            }
+        });
         store.addListener(listController);
         store.addListener(calendarController);
         store.addListener(this);
@@ -556,6 +572,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         if (page == PAGE_TOOLBOX) {
             toolboxController.onShown();
         }
+        if (page == PAGE_ITINERARY) {
+            // 关注可能在别的页面改过，每次进来都重读
+            itineraryController.reload();
+        }
     }
 
     private void updateNavHighlight() {
@@ -685,7 +705,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 return true;
             }
             // 百宝箱里的功能页先退回百宝箱，而不是一路跳回列表
-            if (currentPage == PAGE_MUSIC || currentPage == PAGE_GLOSSARY) {
+            if (currentPage == PAGE_MUSIC || currentPage == PAGE_GLOSSARY
+                    || currentPage == PAGE_ITINERARY) {
                 selectPage(PAGE_TOOLBOX);
                 return true;
             }
