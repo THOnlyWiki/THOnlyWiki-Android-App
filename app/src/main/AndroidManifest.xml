@@ -7,6 +7,15 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- 扫码用。没有相机的设备也允许安装，进扫码页会提示 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <!-- Android 11+ 的包可见性限制：不加这段，queryIntentActivities 数不到日历应用，
          就没法判断该不该弹「选择日历应用」 -->
@@ -36,6 +45,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 扫码页：全屏相机预览，独立 Activity -->
+        <activity
+            android:name=".ui.ScanActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
 
         <!-- 分享日志文件用，不对外暴露，只临时授权读权限 -->
         <provider

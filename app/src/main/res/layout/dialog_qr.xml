@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="4dp">
+
+    <EditText
+        android:id="@+id/qrInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_search"
+        android:gravity="top|start"
+        android:hint="@string/qr_input_hint"
+        android:inputType="textMultiLine"
+        android:maxLines="4"
+        android:minHeight="44dp"
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="14sp" />
+
+    <ImageView
+        android:id="@+id/qrImage"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="14dp"
+        android:contentDescription="@string/qr_image_desc"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/qrEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="@string/qr_empty"
+        android:textColor="@color/text_tertiary"
+        android:textSize="12sp" />
+
+</LinearLayout>

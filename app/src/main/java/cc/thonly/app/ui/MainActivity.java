@@ -61,6 +61,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_SETTINGS = 5;
     private static final int PAGE_TOOLBOX = 6;
     private static final int PAGE_MUSIC = 7;
+    private static final int PAGE_GLOSSARY = 8;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -88,6 +89,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private SettingsController settingsController;
     private ToolboxController toolboxController;
     private MusicController musicController;
+    private GlossaryController glossaryController;
 
     private View[] pages;
     private View scrim;
@@ -141,6 +143,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View settingsPage = getLayoutInflater().inflate(R.layout.view_settings, content, false);
         View toolboxPage = getLayoutInflater().inflate(R.layout.view_toolbox, content, false);
         View musicPage = getLayoutInflater().inflate(R.layout.view_music, content, false);
+        View glossaryPage = getLayoutInflater().inflate(R.layout.view_glossary, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
@@ -149,8 +152,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(settingsPage);
         content.addView(toolboxPage);
         content.addView(musicPage);
+        content.addView(glossaryPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
-                settingsPage, toolboxPage, musicPage};
+                settingsPage, toolboxPage, musicPage, glossaryPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -173,8 +177,14 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             public void run() {
                 selectPage(PAGE_MUSIC);
             }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                selectPage(PAGE_GLOSSARY);
+            }
         });
         musicController = new MusicController(this, musicPage);
+        glossaryController = new GlossaryController(this, glossaryPage);
         store.addListener(listController);
         store.addListener(calendarController);
         store.addListener(this);
@@ -675,7 +685,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 return true;
             }
             // 百宝箱里的功能页先退回百宝箱，而不是一路跳回列表
-            if (currentPage == PAGE_MUSIC) {
+            if (currentPage == PAGE_MUSIC || currentPage == PAGE_GLOSSARY) {
                 selectPage(PAGE_TOOLBOX);
                 return true;
             }

@@ -143,8 +143,7 @@
     <string name="tool_packing_desc">出发前对着勾一遍，别落东西</string>
     <string name="tool_cosplay_title">Cosplay 装备备忘录</string>
     <string name="tool_cosplay_desc">出 cos 才需要的那些零碎</string>
-    <string name="tool_music_title">东方原曲</string>
-    <string name="tool_music_desc">40 张专辑 944 首，可缓存到本地离线听</string>
+    <string name="tool_music_title">东方原曲</string>    <string name="tool_music_desc">40 张专辑 944 首，可缓存到本地离线听</string>
     <string name="music_album_summary">共 %1$d 张专辑 · %2$d 首</string>
     <string name="music_track_count">%1$d 首</string>
     <string name="music_back_to_albums">‹ %1$s</string>
@@ -157,6 +156,28 @@
     <string name="music_play_failed_message">源站可能需要验证。可以在浏览器打开一次，通过验证后回来重试。</string>
     <string name="music_open_browser">在浏览器打开</string>
     <string name="music_no_browser">没有可用的浏览器</string>
+
+    <string name="tool_qr_title">二维码</string>
+    <string name="tool_qr_desc">生成二维码，或扫别人的码</string>
+    <string name="qr_input_hint">输入文字或链接</string>
+    <string name="qr_image_desc">二维码</string>
+    <string name="qr_empty">输入内容后这里会显示二维码</string>
+    <string name="qr_too_long">内容太长，生成不了二维码</string>
+    <string name="qr_copy">复制</string>
+    <string name="qr_scan">扫码</string>
+    <string name="qr_copied">已复制</string>
+    <string name="scan_hint">把二维码放进画面中央</string>
+    <string name="scan_no_permission">需要相机权限才能扫码</string>
+    <string name="scan_no_camera">打不开相机</string>
+    <string name="scan_result_title">扫描结果</string>
+    <string name="scan_open">打开链接</string>
+    <string name="scan_again">继续扫描</string>
+    <string name="scan_not_link">这不是一个链接</string>
+
+    <string name="tool_glossary_title">术语词典</string>
+    <string name="tool_glossary_desc">THO、痛包、谷子…圈内黑话速查</string>
+    <string name="glossary_search_hint">搜索术语或释义</string>
+    <string name="glossary_empty">没找到相关术语</string>
     <string name="checklist_clear">全部取消</string>
     <string name="checklist_add">＋ 添加一项</string>
     <string name="checklist_new_item">新建条目</string>

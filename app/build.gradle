@@ -62,4 +62,6 @@ android {
 // 本项目刻意不引入任何第三方依赖（无 AndroidX / 无 Kotlin stdlib），
 // 安装包才能压到几百 KB。加依赖前请先掂量体积。
 dependencies {
+    // 二维码编解码。纯 Java、不依赖 AndroidX，R8 会把没用到的类裁掉。
+    implementation 'com.google.zxing:core:3.5.3'
 }

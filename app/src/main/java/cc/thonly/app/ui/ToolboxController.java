@@ -19,7 +19,8 @@ public final class ToolboxController {
     private final Activity activity;
     private boolean firstInGroup = true;
 
-    public ToolboxController(final Activity activity, View root, final Runnable openMusic) {
+    public ToolboxController(final Activity activity, View root, final Runnable openMusic,
+                             final Runnable openGlossary) {
         this.activity = activity;
         LinearLayout list = root.findViewById(R.id.toolList);
 
@@ -29,6 +30,20 @@ public final class ToolboxController {
                     @Override
                     public void onClick(View v) {
                         BudgetDialog.show(activity);
+                    }
+                });
+        addCard(list, R.string.tool_qr_title, R.string.tool_qr_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        QrDialog.show(activity);
+                    }
+                });
+        addCard(list, R.string.tool_glossary_title, R.string.tool_glossary_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openGlossary.run();
                     }
                 });
 
