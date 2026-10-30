@@ -33,8 +33,9 @@ import cc.thonly.app.data.TeamApi;
  */
 public final class TeamController {
 
-    private static final String[] TYPE_VALUES = {"company", "car", "room", "booth", "shoot"};
-    private static final String[] TYPE_LABELS = {"同行", "拼车", "拼房", "摊位", "拍摄"};
+    /** 没有「拼房」：平台不撮合陌生人合宿 */
+    private static final String[] TYPE_VALUES = {"company", "car", "booth", "shoot"};
+    private static final String[] TYPE_LABELS = {"同行", "拼车", "摊位", "拍摄"};
     private static final String[] JOIN_VALUES = {"approve", "instant"};
     private static final String[] JOIN_LABELS = {"需要我批准", "立即进入"};
 
