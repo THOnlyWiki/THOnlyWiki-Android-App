@@ -26,6 +26,19 @@
             android:textSize="13sp" />
 
         <TextView
+            android:id="@+id/teamSafety"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="8dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            android:text="@string/team_safety_entry"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp" />
+
+        <TextView
             android:id="@+id/teamCreate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

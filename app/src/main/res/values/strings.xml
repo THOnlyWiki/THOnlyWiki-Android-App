@@ -52,6 +52,10 @@
     <string name="date_month_day">%1$d 月 %2$d 日</string>
     <string name="event_past">已结束</string>
 
+    <string name="team_safety_title">组队安全提醒</string>
+    <string name="team_safety_entry">安全提醒</string>
+    <string name="team_safety_ok">我已了解</string>
+    <string name="team_safety_body">组队信息由用户自行发布，平台不担保任何一方的身份和意图，请自行判断。\n\n· 本功能只用于拼车、同行、摊位、拍摄，不提供住宿拼单。\n· 首次见面请选白天、人多的地方，不要单独赴约。\n· 未成年人参加线下活动需监护人同意。\n· 遇到骚扰、诱导、可疑行为，点开队伍用「举报」，站长会核实处理。\n\n违规者：解散队伍、封禁账号、群内公示。</string>
     <string name="team_create">发起组队</string>
     <string name="team_entry">组队</string>
     <string name="team_empty">还没有人组队，来做第一个</string>

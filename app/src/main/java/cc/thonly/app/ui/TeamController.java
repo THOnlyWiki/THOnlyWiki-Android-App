@@ -36,6 +36,11 @@ public final class TeamController {
     /** 没有「拼房」：平台不撮合陌生人合宿 */
     private static final String[] TYPE_VALUES = {"company", "car", "booth", "shoot"};
     private static final String[] TYPE_LABELS = {"同行", "拼车", "摊位", "拍摄"};
+    /** 安全提醒的确认状态（版本号变了会再弹一次） */
+    private static final String PREFS_SAFETY = "team_safety";
+    private static final String KEY_ACK = "ack_version";
+    private static final int NOTICE_VERSION = 1;
+
     private static final String[] JOIN_VALUES = {"approve", "instant"};
     private static final String[] JOIN_LABELS = {"需要我批准", "立即进入"};
 
@@ -72,6 +77,12 @@ public final class TeamController {
                 openCreate();
             }
         });
+        root.findViewById(R.id.teamSafety).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSafetyNotice(true);
+            }
+        });
     }
 
     /** 切到某场活动的组队列表 */
@@ -79,7 +90,35 @@ public final class TeamController {
         this.year = year;
         this.event = event;
         eventLabel.setText(event.name());
+        showSafetyNotice(false);
         reload();
+    }
+
+    /**
+     * 组队安全提醒。
+     *
+     * <p>第一次进组队页必弹，确认后记住版本号不再打扰；
+     * 文案改了把 {@link #NOTICE_VERSION} +1 就会重新弹一次。
+     */
+    private void showSafetyNotice(boolean force) {
+        android.content.SharedPreferences prefs = activity
+                .getSharedPreferences(PREFS_SAFETY, android.content.Context.MODE_PRIVATE);
+        if (!force && prefs.getInt(KEY_ACK, 0) >= NOTICE_VERSION) {
+            return;
+        }
+        final android.content.SharedPreferences target = prefs;
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.team_safety_title)
+                .setMessage(R.string.team_safety_body)
+                .setPositiveButton(R.string.team_safety_ok,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                target.edit().putInt(KEY_ACK, NOTICE_VERSION).apply();
+                            }
+                        })
+                .setCancelable(false)
+                .show();
     }
 
     public void reload() {
