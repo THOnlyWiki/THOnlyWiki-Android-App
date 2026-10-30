@@ -33,8 +33,19 @@ public final class EventActions implements EventInteraction {
     private String pendingUrl;
     private String pendingTitle;
 
+    /** 从活动详情跳到组队页 */
+    public interface OnOpenTeam {
+        void open(Event event);
+    }
+
+    private OnOpenTeam onOpenTeam;
+
     public EventActions(Activity activity) {
         this.activity = activity;
+    }
+
+    public void setOnOpenTeam(OnOpenTeam listener) {
+        this.onOpenTeam = listener;
     }
 
     @Override
@@ -70,14 +81,14 @@ public final class EventActions implements EventInteraction {
                 }
             });
         }
-        if (!event.qqGroup().isEmpty()) {
-            builder.setNeutralButton(R.string.dialog_copy_qq, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    copyToClipboard(event.qqGroup());
+        builder.setNeutralButton(R.string.team_entry, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (onOpenTeam != null) {
+                    onOpenTeam.open(event);
                 }
-            });
-        }
+            }
+        });
         builder.show();
     }
 

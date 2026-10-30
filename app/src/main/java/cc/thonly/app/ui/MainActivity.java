@@ -28,6 +28,7 @@ import cc.thonly.app.R;
 import cc.thonly.app.data.ActivityEditor;
 import cc.thonly.app.data.AppSidebar;
 import cc.thonly.app.data.AppVersion;
+import cc.thonly.app.data.Event;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
@@ -63,6 +64,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_MUSIC = 7;
     private static final int PAGE_GLOSSARY = 8;
     private static final int PAGE_ITINERARY = 9;
+    private static final int PAGE_TEAM = 10;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -92,6 +94,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private MusicController musicController;
     private GlossaryController glossaryController;
     private ItineraryController itineraryController;
+    private TeamController teamController;
 
     private View[] pages;
     private View scrim;
@@ -147,6 +150,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View musicPage = getLayoutInflater().inflate(R.layout.view_music, content, false);
         View glossaryPage = getLayoutInflater().inflate(R.layout.view_glossary, content, false);
         View itineraryPage = getLayoutInflater().inflate(R.layout.view_itinerary, content, false);
+        View teamPage = getLayoutInflater().inflate(R.layout.view_team, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
@@ -157,8 +161,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(musicPage);
         content.addView(glossaryPage);
         content.addView(itineraryPage);
+        content.addView(teamPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
-                settingsPage, toolboxPage, musicPage, glossaryPage, itineraryPage};
+                settingsPage, toolboxPage, musicPage, glossaryPage, itineraryPage, teamPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -195,6 +200,14 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         musicController = new MusicController(this, musicPage);
         glossaryController = new GlossaryController(this, glossaryPage);
         itineraryController = new ItineraryController(this, itineraryPage);
+        teamController = new TeamController(this, teamPage);
+        actions.setOnOpenTeam(new EventActions.OnOpenTeam() {
+            @Override
+            public void open(Event event) {
+                teamController.show(listController.selectedYear(), event);
+                selectPage(PAGE_TEAM);
+            }
+        });
         listController.setOnOpenItinerary(new Runnable() {
             @Override
             public void run() {

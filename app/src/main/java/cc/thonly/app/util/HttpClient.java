@@ -17,6 +17,11 @@ public final class HttpClient {
     }
 
     public static String getText(String url) throws IOException {
+        return getText(url, null);
+    }
+
+    /** 带 Cookie 的 GET（组队这类要登录态的只读接口用） */
+    public static String getText(String url, String cookieHeader) throws IOException {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -24,6 +29,9 @@ public final class HttpClient {
             connection.setReadTimeout(AppConfig.READ_TIMEOUT_MS);
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("User-Agent", AppConfig.USER_AGENT);
+            if (cookieHeader != null && !cookieHeader.isEmpty()) {
+                connection.setRequestProperty("Cookie", cookieHeader);
+            }
 
             int status = connection.getResponseCode();
             boolean success = status >= 200 && status < 300;

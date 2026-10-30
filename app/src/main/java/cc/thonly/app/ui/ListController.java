@@ -473,6 +473,11 @@ public final class ListController implements EventStore.Listener {
         });
     }
 
+    /** 当前选中的年份（组队页要知道队伍挂在哪个年份下） */
+    public int selectedYear() {
+        return selectedYear;
+    }
+
     /** 顶部倒计时那行点了去哪 */
     public void setOnOpenItinerary(Runnable handler) {
         this.openItinerary = handler;
