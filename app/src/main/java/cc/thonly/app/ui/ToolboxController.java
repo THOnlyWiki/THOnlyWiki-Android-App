@@ -23,6 +23,8 @@ public final class ToolboxController {
         void openGlossary();
 
         void openItinerary();
+
+        void openMessages();
     }
 
     private final Activity activity;
@@ -75,6 +77,13 @@ public final class ToolboxController {
                     @Override
                     public void onClick(View v) {
                         navigator.openItinerary();
+                    }
+                });
+        addCard(list, R.string.tool_messages_title, R.string.tool_messages_desc,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        navigator.openMessages();
                     }
                 });
 

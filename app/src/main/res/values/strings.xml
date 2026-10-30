@@ -56,6 +56,17 @@
     <string name="team_safety_entry">安全提醒</string>
     <string name="team_safety_ok">我已了解</string>
     <string name="team_safety_body">组队信息由用户自行发布，平台不担保任何一方的身份和意图，请自行判断。\n\n· 本功能只用于拼车、同行、摊位、拍摄，不提供住宿拼单。\n· 首次见面请选白天、人多的地方，不要单独赴约。\n· 未成年人参加线下活动需监护人同意。\n· 遇到骚扰、诱导、可疑行为，点开队伍用「举报」，站长会核实处理。\n\n违规者：解散队伍、封禁账号、群内公示。</string>
+    <string name="messages_tab_notify">通知</string>
+    <string name="messages_tab_chat">私信</string>
+    <string name="messages_empty_notify">还没有通知</string>
+    <string name="messages_empty_chat">还没有私信</string>
+    <string name="messages_login_required">登录后才能查看消息</string>
+    <string name="messages_load_failed">加载失败，稍后再试</string>
+    <string name="messages_reply_hint">输入内容…</string>
+    <string name="messages_send">发送</string>
+    <string name="messages_send_failed">发送失败，稍后再试</string>
+    <string name="tool_messages_title">消息</string>
+    <string name="tool_messages_desc">通知和私信，与网页端同步</string>
     <string name="team_create">发起组队</string>
     <string name="team_entry">组队</string>
     <string name="team_empty">还没有人组队，来做第一个</string>
