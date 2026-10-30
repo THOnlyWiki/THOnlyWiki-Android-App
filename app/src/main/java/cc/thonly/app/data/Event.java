@@ -2,6 +2,8 @@ package cc.thonly.app.data;
 
 import org.json.JSONObject;
 
+import java.util.Calendar;
+
 import cc.thonly.app.AppConfig;
 
 /** 一条活动记录，不可变对象。 */
@@ -75,6 +77,26 @@ public final class Event {
 
     public boolean hasIcsFile() {
         return !icsPath.isEmpty();
+    }
+
+    /**
+     * 活动是否已经过去。当天算「还没过去」——今天还有活动在进行。
+     * 日期没定的一律当作没过期。
+     */
+    public boolean isPast() {
+        if (!date.isResolved()) {
+            return false;
+        }
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        Calendar target = Calendar.getInstance();
+        target.set(date.year(), date.month() - 1, date.day(), 0, 0, 0);
+        target.set(Calendar.MILLISECOND, 0);
+        return target.before(today);
     }
 
     /** 服务端给的是站内相对路径，这里补成完整 URL */

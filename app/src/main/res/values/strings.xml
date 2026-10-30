@@ -50,6 +50,7 @@
     <string name="month_title">%1$d 年 %2$d 月</string>
     <string name="day_title">%1$d 月 %2$d 日 · %3$d 场</string>
     <string name="date_month_day">%1$d 月 %2$d 日</string>
+    <string name="event_past">已结束</string>
     <string name="meta_line">%1$s · %2$s · %3$s</string>
 
     <string name="unknown_date">日期待定</string>

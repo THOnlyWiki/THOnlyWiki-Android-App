@@ -119,13 +119,22 @@ public final class EventAdapter extends BaseAdapter {
         }
 
         void bind(final Event event, final EventInteraction interaction) {
+            // 已经办过的活动：整行压暗，左侧色条变灰，日期行后缀「已结束」
+            boolean past = event.isPast();
+            boolean dimmed = past || event.status().isCancelled();
+
             nameView.setText(event.name());
             nameView.getPaint().setStrikeThruText(event.status().isCancelled());
-            nameView.setTextColor(context.getColor(event.status().isCancelled()
+            nameView.setTextColor(context.getColor(dimmed
                     ? R.color.text_tertiary
                     : R.color.text_primary));
-            metaView.setText(buildMeta(event));
-            statusBar.setBackgroundColor(context.getColor(event.status().colorRes()));
+            metaView.setText(buildMeta(event, past));
+            metaView.setTextColor(context.getColor(past
+                    ? R.color.text_tertiary
+                    : R.color.text_secondary));
+            statusBar.setBackgroundColor(context.getColor(past
+                    ? R.color.text_tertiary
+                    : event.status().colorRes()));
 
             actionView.setVisibility(!editMode && event.hasIcsFile() ? View.VISIBLE : View.GONE);
             actionView.setOnClickListener(new View.OnClickListener() {
@@ -161,7 +170,7 @@ public final class EventAdapter extends BaseAdapter {
             });
         }
 
-        private String buildMeta(Event event) {
+        private String buildMeta(Event event, boolean past) {
             String date = event.date().isResolved()
                     ? context.getString(R.string.date_month_day,
                     event.date().month(), event.date().day())
@@ -171,8 +180,10 @@ public final class EventAdapter extends BaseAdapter {
                     ? context.getString(R.string.unknown_region)
                     : event.region();
 
-            return context.getString(R.string.meta_line,
+            String line = context.getString(R.string.meta_line,
                     date, region, context.getString(event.category().labelRes()));
+            // 标记放前面：单行显示，末尾被省略号截掉时至少还能看见「已结束」
+            return past ? context.getString(R.string.event_past) + " · " + line : line;
         }
 
         private String fallbackDate(Event event) {
