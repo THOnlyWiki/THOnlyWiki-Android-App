@@ -25,7 +25,7 @@ public final class UpdateChecker {
             public void run() {
                 AppVersion latest = null;
                 try {
-                    latest = AppVersion.parse(HttpClient.getText(AppConfig.UPDATE_CHECK_URL));
+                    latest = AppVersion.parse(HttpClient.getText(ServerConfig.updateCheckUrl()));
                 } catch (IOException ignored) {
                     // 网络失败按「检查失败」处理
                 }

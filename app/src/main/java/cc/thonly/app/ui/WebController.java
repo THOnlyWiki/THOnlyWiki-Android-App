@@ -30,6 +30,7 @@ import java.util.Map;
 
 import cc.thonly.app.AppConfig;
 import cc.thonly.app.R;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.AppUrls;
 
@@ -312,7 +313,7 @@ public final class WebController {
         }
         String absolute = url;
         if (!url.startsWith("http")) {
-            absolute = AppConfig.BASE_URL + (url.startsWith("/") ? url : "/" + url);
+            absolute = ServerConfig.baseUrl() + (url.startsWith("/") ? url : "/" + url);
         }
         loaded = true;
         errorView.setVisibility(View.GONE);

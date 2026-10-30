@@ -55,7 +55,7 @@ public final class RemoteEventRepository implements EventRepository {
         }
 
         try {
-            String body = HttpClient.getText(AppConfig.ACTIVITY_API + "/list?year=" + year);
+            String body = HttpClient.getText(ServerConfig.activityApi() + "/list?year=" + year);
             cache.write(cacheKey, body);
             return new LoadResult(parse(year, body), false, System.currentTimeMillis());
         } catch (IOException networkError) {

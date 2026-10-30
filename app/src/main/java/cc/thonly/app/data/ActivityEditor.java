@@ -110,7 +110,7 @@ public final class ActivityEditor {
         try {
             String cookie = cookieHeader();
             FormPost.Response response = FormPost.post(
-                    AppConfig.ACTIVITY_API + path, form, cookie);
+                    ServerConfig.activityApi() + path, form, cookie);
             JSONObject root = new JSONObject(response.body());
             boolean success = root.optBoolean(successKey, false);
             String message = root.optString("message", "");

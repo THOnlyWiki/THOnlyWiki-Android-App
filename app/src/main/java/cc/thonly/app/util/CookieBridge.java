@@ -1,5 +1,7 @@
 package cc.thonly.app.util;
 
+import cc.thonly.app.data.ServerConfig;
+
 import android.content.Context;
 import android.webkit.CookieManager;
 
@@ -20,7 +22,7 @@ public final class CookieBridge {
         manager.setAcceptCookie(true);
         for (String pair : cookieHeader.split("; ")) {
             if (pair.contains("=")) {
-                manager.setCookie(AppConfig.BASE_URL, pair + "; path=/");
+                manager.setCookie(ServerConfig.baseUrl(), pair + "; path=/");
             }
         }
         manager.flush();
@@ -39,7 +41,7 @@ public final class CookieBridge {
      * 那份存档就过期了。写接口要用这里取的最新值。
      */
     public static String current() {
-        String cookie = CookieManager.getInstance().getCookie(AppConfig.BASE_URL);
+        String cookie = CookieManager.getInstance().getCookie(ServerConfig.baseUrl());
         return cookie == null ? "" : cookie;
     }
 }

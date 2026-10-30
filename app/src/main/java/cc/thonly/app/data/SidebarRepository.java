@@ -15,7 +15,7 @@ import cc.thonly.app.util.HttpClient;
 public final class SidebarRepository {
 
     private static final String SOURCE_URL =
-            AppConfig.BASE_URL + "/index.php?title=WikiKernel%3ASidebar-App&action=raw";
+            ServerConfig.baseUrl() + "/index.php?title=WikiKernel%3ASidebar-App&action=raw";
     private static final String CACHE_KEY = "sidebar.json";
 
     private final FileCache cache;

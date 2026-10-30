@@ -1,5 +1,7 @@
 package cc.thonly.app.util;
 
+import cc.thonly.app.data.ServerConfig;
+
 import android.net.Uri;
 
 import cc.thonly.app.AppConfig;
@@ -10,7 +12,7 @@ public final class AppUrls {
     public static final String HOST = "thonly.cc";
 
     /** 首页（URL 里是中文，必须预先百分号编码） */
-    public static final String HOME = AppConfig.BASE_URL + "/%E9%A6%96%E9%A1%B5";
+    public static final String HOME = ServerConfig.baseUrl() + "/%E9%A6%96%E9%A1%B5";
 
     private static final String PARAM_REFERENCE = "open_reference";
     private static final String VALUE_REFERENCE = "app";

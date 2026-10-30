@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import cc.thonly.app.AppConfig;
 import cc.thonly.app.R;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.data.AppVersion;
 import cc.thonly.app.data.SettingsStore;
 
@@ -71,7 +72,7 @@ public final class UpdateDialog {
     public static void openDownloadPage(Activity activity) {
         try {
             activity.startActivity(new Intent(Intent.ACTION_VIEW,
-                    Uri.parse(AppConfig.DOWNLOAD_PAGE_URL)));
+                    Uri.parse(ServerConfig.downloadPageUrl())));
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity, R.string.toast_no_browser, Toast.LENGTH_SHORT).show();
         }

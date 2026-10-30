@@ -1,10 +1,13 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,6 +16,7 @@ import java.io.File;
 
 import cc.thonly.app.R;
 import cc.thonly.app.data.AppVersion;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.UpdateChecker;
 import cc.thonly.app.util.AppLog;
@@ -33,6 +37,7 @@ public final class SettingsController {
     private final TextView aboutText;
     private final TextView deviceModelValue;
     private final TextView webViewValue;
+    private final TextView serverValue;
     private final Switch autoCheckSwitch;
 
     public SettingsController(Activity activity, View root, SettingsStore settings,
@@ -46,6 +51,7 @@ public final class SettingsController {
         this.aboutText = root.findViewById(R.id.aboutText);
         this.deviceModelValue = root.findViewById(R.id.deviceModelValue);
         this.webViewValue = root.findViewById(R.id.webViewValue);
+        this.serverValue = root.findViewById(R.id.serverValue);
         this.autoCheckSwitch = root.findViewById(R.id.autoCheckUpdate);
 
         bind(root);
@@ -54,6 +60,53 @@ public final class SettingsController {
     public void onShown() {
         versionValue.setText(currentVersion.name());
         autoCheckSwitch.setChecked(settings.isAutoCheckUpdate());
+        updateServerValue();
+    }
+
+    private void updateServerValue() {
+        serverValue.setText(ServerConfig.baseUrl());
+        // 改过地址就标成强调色，一眼能看出不是正式站点
+        serverValue.setTextColor(activity.getColor(ServerConfig.isCustom()
+                ? R.color.accent : R.color.text_secondary));
+    }
+
+    /** 改服务器地址，用于和本地后端联调 */
+    private void editServer() {
+        final EditText input = new EditText(activity);
+        input.setText(ServerConfig.baseUrl());
+        input.setSelection(input.getText().length());
+        input.setSingleLine(true);
+        input.setHint(R.string.settings_server_hint);
+
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.settings_server)
+                .setView(input)
+                .setPositiveButton(R.string.edit_save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (ServerConfig.setBaseUrl(input.getText().toString())) {
+                            Toast.makeText(activity, R.string.settings_server_saved,
+                                    Toast.LENGTH_SHORT).show();
+                            // 旧的 EventStore、WebView 还拿着老地址，整体重建最省事
+                            activity.recreate();
+                        } else {
+                            Toast.makeText(activity, R.string.settings_server_invalid,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNeutralButton(R.string.settings_server_reset,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ServerConfig.reset();
+                                Toast.makeText(activity, R.string.settings_server_saved,
+                                        Toast.LENGTH_SHORT).show();
+                                activity.recreate();
+                            }
+                        })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
     }
 
     private void bind(View root) {
@@ -69,6 +122,12 @@ public final class SettingsController {
             @Override
             public void onClick(View v) {
                 checkNow();
+            }
+        });
+        root.findViewById(R.id.rowServer).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editServer();
             }
         });
         root.findViewById(R.id.rowDownload).setOnClickListener(new View.OnClickListener() {

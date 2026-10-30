@@ -82,6 +82,6 @@ public final class Event {
         if (icsPath.isEmpty()) {
             return "";
         }
-        return icsPath.startsWith("http") ? icsPath : AppConfig.BASE_URL + icsPath;
+        return icsPath.startsWith("http") ? icsPath : ServerConfig.baseUrl() + icsPath;
     }
 }

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  thonly.cc 首页目前 302 跳到 http:// 明文地址，WebView 默认会拦截。
-  这里只给这一个域名放行明文，其它域名一律禁止。
-  更彻底的做法是把服务端跳转改成 https，然后把这个文件也删掉。
+  thonly.cc 首页目前 302 跳到 http:// 明文地址，WebView 默认会拦截，所以放行明文。
+  设置里可以把服务器地址改成局域网 IP（比如 http://192.168.1.10:8080）做联调，
+  地址是运行时才知道的，没法提前写进 domain-config，所以 base-config 整体放行明文。
+
+  这不改变实际协议：默认地址仍是 https，只有手动填 http 才会走明文。
+  等站点跳转改成 https 后，可以把 base-config 收回来。
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">thonly.cc</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

@@ -19,6 +19,7 @@ import android.widget.Toast;
 
 import cc.thonly.app.AppConfig;
 import cc.thonly.app.R;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.util.QrCode;
 
 /** 二维码生成：输入内容实时出图，可以复制原文或跳去扫码。 */
@@ -35,7 +36,7 @@ public final class QrDialog {
         final ImageView image = content.findViewById(R.id.qrImage);
         final TextView empty = content.findViewById(R.id.qrEmpty);
 
-        input.setText(AppConfig.BASE_URL + "/");
+        input.setText(ServerConfig.baseUrl() + "/");
         input.setSelection(input.getText().length());
 
         input.addTextChangedListener(new TextWatcher() {

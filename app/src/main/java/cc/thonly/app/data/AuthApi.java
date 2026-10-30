@@ -81,7 +81,7 @@ public final class AuthApi {
 
     private Result submit(String path, Map<String, String> form) throws EventApiException {
         try {
-            FormPost.Response response = FormPost.post(AppConfig.BASE_URL + path, form, null);
+            FormPost.Response response = FormPost.post(ServerConfig.baseUrl() + path, form, null);
             return parse(response.body(), response.cookies());
         } catch (IOException e) {
             throw new EventApiException("网络请求失败", e);

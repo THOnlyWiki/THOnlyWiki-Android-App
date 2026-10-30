@@ -112,6 +112,12 @@
     <string name="settings_check_update">检查更新</string>
     <string name="settings_auto_check">自动检查更新</string>
     <string name="settings_group_about">关于</string>
+    <string name="settings_group_developer">开发者</string>
+    <string name="settings_server">服务器地址</string>
+    <string name="settings_server_reset">恢复默认</string>
+    <string name="settings_server_invalid">地址不合法</string>
+    <string name="settings_server_saved">已保存，正在重新加载</string>
+    <string name="settings_server_hint">例如 http://192.168.1.10:8080</string>
     <string name="settings_download">前往官网下载最新版</string>
     <string name="settings_clear_cache">清除离线存档</string>
     <string name="settings_device_model">设备型号</string>
