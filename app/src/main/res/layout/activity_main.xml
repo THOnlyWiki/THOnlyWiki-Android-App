@@ -91,7 +91,7 @@
         android:id="@+id/drawer"
         android:layout_width="@dimen/drawer_width"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         android:background="@color/tabbar_bg"
         android:elevation="16dp"
         android:orientation="vertical"

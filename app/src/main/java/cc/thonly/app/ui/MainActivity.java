@@ -306,7 +306,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         navBuiltIn = findViewById(R.id.navBuiltIn);
         navDynamic = findViewById(R.id.navDynamic);
         drawerWidth = getResources().getDimensionPixelSize(R.dimen.drawer_width);
-        drawer.setTranslationX(drawerWidth);
+        // 抽屉在左边，收起时往左推到屏幕外
+        drawer.setTranslationX(-drawerWidth);
 
         scrim.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -627,7 +628,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             return;
         }
         drawerOpen = false;
-        drawer.animate().translationX(drawerWidth).setDuration(DRAWER_ANIMATION_MS).start();
+        drawer.animate().translationX(-drawerWidth).setDuration(DRAWER_ANIMATION_MS).start();
         scrim.animate().alpha(0f).setDuration(DRAWER_ANIMATION_MS).withEndAction(new Runnable() {
             @Override
             public void run() {
