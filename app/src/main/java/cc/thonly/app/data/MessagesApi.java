@@ -61,14 +61,18 @@ public final class MessagesApi {
         public final boolean unread;
         /** 私信会话的对方用户名；通知为 null */
         public final String peer;
+        /** 头像地址（站内相对路径）；空表示用首字头像 */
+        public final String avatar;
 
-        Item(long id, String title, String body, String time, boolean unread, String peer) {
+        Item(long id, String title, String body, String time, boolean unread, String peer,
+             String avatar) {
             this.id = id;
             this.title = title;
             this.body = body;
             this.time = time;
             this.unread = unread;
             this.peer = peer;
+            this.avatar = avatar;
         }
     }
 
@@ -91,7 +95,8 @@ public final class MessagesApi {
             String label = json.optString("typeLabel", "");
             String title = actor.isEmpty() ? label : actor + " · " + label;
             items.add(new Item(json.optLong("id"), title, json.optString("comment", ""),
-                    json.optString("timeText", ""), !json.optBoolean("read", false), null));
+                    json.optString("timeText", ""), !json.optBoolean("read", false), null,
+                    json.optString("actorAvatar", "")));
         }
         return items;
     }
@@ -126,7 +131,8 @@ public final class MessagesApi {
             }
             byPeer.put(peer, new Item(json.optLong("id"), peer,
                     json.optString("content", ""), shortTime(json.optString("createAt", "")),
-                    !json.optBoolean("read", true) && json.optBoolean("incoming", false), peer));
+                    !json.optBoolean("read", true) && json.optBoolean("incoming", false), peer,
+                    json.optString("avatar", "")));
         }
         items.addAll(byPeer.values());
         return items;

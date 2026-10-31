@@ -21,6 +21,7 @@ import java.util.List;
 import cc.thonly.app.R;
 import cc.thonly.app.data.MessagesApi;
 import cc.thonly.app.data.UserSession;
+import cc.thonly.app.util.AvatarLoader;
 
 /**
  * 消息中心：通知（Echo）+ 私信（SocialProfile）。
@@ -304,6 +305,8 @@ public final class MessagesController {
                         .inflate(R.layout.item_message, parent, false);
             }
             MessagesApi.Item item = items.get(position);
+            AvatarLoader.load(view.findViewById(R.id.itemAvatar), item.avatar, item.title,
+                    dp(40));
             ((TextView) view.findViewById(R.id.itemTitle)).setText(item.title);
             TextView body = view.findViewById(R.id.itemBody);
             if (item.body.isEmpty()) {

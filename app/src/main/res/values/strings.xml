@@ -65,7 +65,7 @@
     <string name="messages_reply_hint">输入内容…</string>
     <string name="messages_send">发送</string>
     <string name="messages_send_failed">发送失败，稍后再试</string>
-    <string name="tool_messages_title">消息</string>
+    <string name="tool_messages_title">消息列表</string>
     <string name="tool_messages_desc">通知和私信，与网页端同步</string>
     <string name="team_create">发起组队</string>
     <string name="team_entry">组队</string>
