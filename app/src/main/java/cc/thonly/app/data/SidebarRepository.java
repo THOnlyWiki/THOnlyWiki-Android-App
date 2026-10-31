@@ -2,7 +2,6 @@ package cc.thonly.app.data;
 
 import java.io.IOException;
 
-import cc.thonly.app.AppConfig;
 import cc.thonly.app.util.FileCache;
 import cc.thonly.app.util.HttpClient;
 
@@ -14,9 +13,15 @@ import cc.thonly.app.util.HttpClient;
  */
 public final class SidebarRepository {
 
-    private static final String SOURCE_URL =
-            ServerConfig.baseUrl() + "/index.php?title=WikiKernel%3ASidebar-App&action=raw";
     private static final String CACHE_KEY = "sidebar.json";
+
+    /**
+     * 每次都现拼，不能存成 static final——那样类加载时就把地址定死了，
+     * 设置里改服务器地址后抽屉还去拉老站点。
+     */
+    private static String sourceUrl() {
+        return ServerConfig.baseUrl() + "/index.php?title=WikiKernel%3ASidebar-App&action=raw";
+    }
 
     private final FileCache cache;
 
@@ -26,7 +31,7 @@ public final class SidebarRepository {
 
     public AppSidebar load(AppVersion currentVersion) {
         try {
-            String body = HttpClient.getText(SOURCE_URL);
+            String body = HttpClient.getText(sourceUrl());
             cache.write(CACHE_KEY, body);
             return AppSidebar.parse(body, currentVersion);
         } catch (IOException e) {

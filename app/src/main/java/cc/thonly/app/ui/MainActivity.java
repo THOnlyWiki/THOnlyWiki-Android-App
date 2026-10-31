@@ -516,6 +516,21 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         if ("toolbox".equals(page)) {
             return PAGE_TOOLBOX;
         }
+        if ("messages".equals(page)) {
+            return PAGE_MESSAGES;
+        }
+        if ("itinerary".equals(page)) {
+            return PAGE_ITINERARY;
+        }
+        if ("music".equals(page)) {
+            return PAGE_MUSIC;
+        }
+        if ("glossary".equals(page)) {
+            return PAGE_GLOSSARY;
+        }
+        if ("team".equals(page)) {
+            return PAGE_TEAM;
+        }
         return PAGE_NONE;
     }
 
