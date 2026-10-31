@@ -103,6 +103,7 @@
             android:background="@drawable/bg_chat_input"
             android:hint="@string/chat_hint"
             android:inputType="textMultiLine"
+            android:maxLength="2000"
             android:maxLines="4"
             android:minHeight="38dp"
             android:paddingStart="14dp"
