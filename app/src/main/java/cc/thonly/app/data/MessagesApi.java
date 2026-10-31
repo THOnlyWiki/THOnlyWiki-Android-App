@@ -92,6 +92,12 @@ public final class MessagesApi {
                 continue;
             }
             String actor = json.optString("actorName", "");
+            // 系统通知没有操作人：别显示 "SYSTEM · 组队"，直接只留类型名，
+            // 首字头像也就变成「组」而不是没意义的 S
+            if (actor.isEmpty() || "null".equalsIgnoreCase(actor)
+                    || "SYSTEM".equalsIgnoreCase(actor) || "系统".equals(actor)) {
+                actor = "";
+            }
             String label = json.optString("typeLabel", "");
             String title = actor.isEmpty() ? label : actor + " · " + label;
             items.add(new Item(json.optLong("id"), title, json.optString("comment", ""),
