@@ -116,6 +116,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private TextView navToolboxItem;
     private TextView accountLabel;
     private ImageView drawerAvatar;
+    private View appToolbar;
 
     /** 固定行（内置 + 系统）与动态行分开存，动态行每次重新下发时重建 */
     private final List<TextView> fixedRows = new ArrayList<TextView>();
@@ -350,6 +351,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         navToolboxItem = findViewById(R.id.navToolbox);
         accountLabel = findViewById(R.id.accountLabel);
         drawerAvatar = findViewById(R.id.drawerAvatar);
+        appToolbar = findViewById(R.id.appToolbar);
         navLogoutItem.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -738,6 +740,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         } else {
             chatController.onHidden();
         }
+        // 聊天页自带顶栏，全局工具栏再占一条就重复了
+        appToolbar.setVisibility(page == PAGE_CHAT ? View.GONE : View.VISIBLE);
         if (page == PAGE_ITINERARY) {
             // 关注可能在别的页面改过，每次进来都重读
             itineraryController.reload();
