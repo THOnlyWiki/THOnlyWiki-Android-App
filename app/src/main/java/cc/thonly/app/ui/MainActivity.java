@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -37,9 +38,11 @@ import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.SidebarRepository;
 import cc.thonly.app.data.UpdateChecker;
+import cc.thonly.app.data.ProfileApi;
 import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.data.UserSession;
 import cc.thonly.app.util.AppLog;
+import cc.thonly.app.util.AvatarLoader;
 import cc.thonly.app.util.CookieBridge;
 import cc.thonly.app.util.DeviceInfo;
 import cc.thonly.app.util.FileCache;
@@ -110,6 +113,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private TextView navLogoutItem;
     private TextView navToolboxItem;
     private TextView accountLabel;
+    private ImageView drawerAvatar;
 
     /** 固定行（内置 + 系统）与动态行分开存，动态行每次重新下发时重建 */
     private final List<TextView> fixedRows = new ArrayList<TextView>();
@@ -329,6 +333,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         navLogoutItem = findViewById(R.id.navLogout);
         navToolboxItem = findViewById(R.id.navToolbox);
         accountLabel = findViewById(R.id.accountLabel);
+        drawerAvatar = findViewById(R.id.drawerAvatar);
         navLogoutItem.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -365,6 +370,43 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         accountLabel.setText(loggedIn
                 ? getString(R.string.drawer_account, session.username())
                 : getString(R.string.drawer_not_logged_in));
+        loadDrawerAvatar(loggedIn);
+    }
+
+    /**
+     * 抽屉头像。没登录就不显示（留个空位反而奇怪）；
+     * 登录了就后台拉一次头像地址，失败会自动退回首字头像。
+     */
+    private void loadDrawerAvatar(boolean loggedIn) {
+        if (!loggedIn) {
+            drawerAvatar.setVisibility(View.GONE);
+            return;
+        }
+        drawerAvatar.setVisibility(View.VISIBLE);
+        final String name = session.username();
+        // 先用首字头像占位，拿到真头像再替换
+        AvatarLoader.load(drawerAvatar, "", name, dp(40));
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String avatar;
+                try {
+                    avatar = ProfileApi.myAvatar(MainActivity.this);
+                } catch (java.io.IOException e) {
+                    return;
+                }
+                final String path = avatar;
+                if (path.isEmpty()) {
+                    return;
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AvatarLoader.load(drawerAvatar, path, name, dp(40));
+                    }
+                });
+            }
+        }, "drawer-avatar").start();
     }
 
     private AppVersion resolveCurrentVersion() {
