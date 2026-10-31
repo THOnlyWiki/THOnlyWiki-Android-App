@@ -183,27 +183,50 @@ public final class MessagesApi {
                 ServerConfig.baseUrl() + MSG + "/list?limit=50", cookie(context)));
     }
 
-    /** 收件箱按对方分组，每组取最新一条 */
+    /**
+     * 按对方分组，每组取最新一条，最新的会话排前面。
+     *
+     * <p>接口返回的是双向可见的消息（含自己发的），按时间升序；
+     * 这里顺序遍历、不断覆盖，最后按「该会话最后一条消息的下标」倒序排。
+     */
     public static List<Item> conversationItems(Result result) {
-        List<Item> items = new ArrayList<Item>();
         JSONArray array = arrayOf(result, "messages");
-        Map<String, Item> byPeer = new LinkedHashMap<String, Item>();
+        Map<String, Integer> lastIndex = new LinkedHashMap<String, Integer>();
+        Map<String, Item> latest = new LinkedHashMap<String, Item>();
+        Map<String, Boolean> unread = new LinkedHashMap<String, Boolean>();
+
         for (int i = 0; i < array.length(); i++) {
             JSONObject json = array.optJSONObject(i);
             if (json == null) {
                 continue;
             }
-            String peer = json.optBoolean("incoming", false)
-                    ? json.optString("from", "") : json.optString("to", "");
-            if (peer.isEmpty() || byPeer.containsKey(peer)) {
+            boolean incoming = json.optBoolean("incoming", false);
+            String peer = incoming ? json.optString("from", "") : json.optString("to", "");
+            if (peer.isEmpty()) {
                 continue;
             }
-            byPeer.put(peer, new Item(json.optLong("id"), peer,
+            lastIndex.put(peer, i);
+            latest.put(peer, new Item(json.optLong("id"), peer,
                     json.optString("content", ""), shortTime(json.optString("createAt", "")),
-                    !json.optBoolean("read", true) && json.optBoolean("incoming", false), peer,
-                    json.optString("avatar", "")));
+                    false, peer, json.optString("avatar", "")));
+            boolean unreadNow = incoming && !json.optBoolean("read", true);
+            unread.put(peer, unreadNow || Boolean.TRUE.equals(unread.get(peer)));
         }
-        items.addAll(byPeer.values());
+
+        List<String> peers = new ArrayList<String>(lastIndex.keySet());
+        java.util.Collections.sort(peers, new java.util.Comparator<String>() {
+            @Override
+            public int compare(String a, String b) {
+                return lastIndex.get(b) - lastIndex.get(a);
+            }
+        });
+
+        List<Item> items = new ArrayList<Item>();
+        for (String peer : peers) {
+            Item base = latest.get(peer);
+            items.add(new Item(base.id, base.title, base.body, base.time,
+                    Boolean.TRUE.equals(unread.get(peer)), base.peer, base.avatar));
+        }
         return items;
     }
 
