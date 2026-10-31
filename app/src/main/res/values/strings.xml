@@ -60,6 +60,8 @@
     <string name="messages_tab_chat">私信</string>
     <string name="messages_empty_notify">还没有通知</string>
     <string name="messages_empty_chat">还没有私信</string>
+    <string name="messages_search_hint">搜索用户，发起新对话</string>
+    <string name="messages_search_empty">没找到这个用户</string>
     <string name="messages_login_required">登录后才能查看消息</string>
     <string name="messages_load_failed">加载失败，稍后再试</string>
     <string name="messages_reply_hint">输入内容…</string>

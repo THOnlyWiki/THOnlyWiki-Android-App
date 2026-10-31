@@ -45,10 +45,16 @@ public final class MessagesController {
     private final TextView tabChat;
     private final ListView listView;
     private final TextView emptyView;
+    private final EditText searchBox;
     private final MessageAdapter adapter;
     private final List<MessagesApi.Item> items = new ArrayList<MessagesApi.Item>();
 
     private int mode = MODE_NOTIFY;
+    /** 正在显示搜索结果（此时点条目是开新对话） */
+    private boolean searching;
+    private final android.os.Handler debounce =
+            new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable pendingSearch;
 
     public MessagesController(final Activity activity, View root, OnOpenChat onOpenChat) {
         this.activity = activity;
@@ -57,6 +63,7 @@ public final class MessagesController {
         this.tabChat = root.findViewById(R.id.tabChat);
         this.listView = root.findViewById(R.id.messageList);
         this.emptyView = root.findViewById(R.id.messageEmpty);
+        this.searchBox = root.findViewById(R.id.userSearch);
 
         this.adapter = new MessageAdapter();
         listView.setAdapter(adapter);
@@ -85,6 +92,77 @@ public final class MessagesController {
                 switchMode(MODE_CHAT);
             }
         });
+
+        // 边打边搜，300ms 防抖，避免每个字都发一次请求
+        searchBox.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable editable) {
+                scheduleSearch(editable.toString().trim());
+            }
+        });
+    }
+
+    private void scheduleSearch(final String keyword) {
+        if (pendingSearch != null) {
+            debounce.removeCallbacks(pendingSearch);
+        }
+        pendingSearch = new Runnable() {
+            @Override
+            public void run() {
+                if (keyword.isEmpty()) {
+                    searching = false;
+                    reload();
+                } else {
+                    search(keyword);
+                }
+            }
+        };
+        debounce.postDelayed(pendingSearch, 300L);
+    }
+
+    /** 搜人：结果直接铺在同一个列表里，点一条就开始新对话 */
+    private void search(final String keyword) {
+        if (!new UserSession(activity).isLoggedIn()) {
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                MessagesApi.Result result = null;
+                try {
+                    result = MessagesApi.searchUsers(activity, keyword);
+                } catch (IOException ignored) {
+                    // 网络问题就保持上一次的结果
+                }
+                final MessagesApi.Result loaded = result;
+                if (loaded == null) {
+                    return;
+                }
+                final List<MessagesApi.Item> found = MessagesApi.userItems(loaded);
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!keyword.equals(searchBox.getText().toString().trim())) {
+                            return;   // 已经有更新的输入了，丢掉这次结果
+                        }
+                        searching = true;
+                        items.clear();
+                        items.addAll(found);
+                        adapter.notifyDataSetChanged();
+                        emptyView.setText(R.string.messages_search_empty);
+                        emptyView.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                });
+            }
+        }, "messages-search").start();
     }
 
     /** 每次进入页面都重拉 */
@@ -97,6 +175,9 @@ public final class MessagesController {
             return;
         }
         mode = target;
+        searching = false;
+        searchBox.setVisibility(target == MODE_CHAT ? View.VISIBLE : View.GONE);
+        searchBox.setText("");
         tabNotify.setTextColor(activity.getColor(
                 mode == MODE_NOTIFY ? R.color.accent : R.color.text_secondary));
         tabChat.setTextColor(activity.getColor(

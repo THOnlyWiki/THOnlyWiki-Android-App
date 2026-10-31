@@ -207,6 +207,31 @@ public final class MessagesApi {
         return items;
     }
 
+    /** 按用户名搜人（发起新会话用） */
+    public static Result searchUsers(Context context, String keyword) throws IOException {
+        return parse(HttpClient.getText(ServerConfig.baseUrl() + MSG + "/search-users?q="
+                + URLEncoder.encode(keyword, "UTF-8"), cookie(context)));
+    }
+
+    /** 搜索结果 → 列表项（peer 就是用户名，点了直接开对话） */
+    public static List<Item> userItems(Result result) {
+        List<Item> items = new ArrayList<Item>();
+        JSONArray array = arrayOf(result, "users");
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject json = array.optJSONObject(i);
+            if (json == null) {
+                continue;
+            }
+            String name = json.optString("username", "");
+            if (name.isEmpty()) {
+                continue;
+            }
+            items.add(new Item(json.optLong("id"), name, "", "",
+                    false, name, json.optString("avatar", "")));
+        }
+        return items;
+    }
+
     public static Result thread(Context context, String with) throws IOException {
         return parse(HttpClient.getText(ServerConfig.baseUrl() + MSG + "/thread?with="
                 + URLEncoder.encode(with, "UTF-8"), cookie(context)));
