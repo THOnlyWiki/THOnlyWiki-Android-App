@@ -68,6 +68,11 @@
     <string name="chat_hint">说点什么…</string>
     <string name="chat_send">发送</string>
     <string name="chat_empty">还没有消息，打个招呼吧</string>
+    <string name="chat_recall">撤回</string>
+    <string name="chat_recall_confirm">撤回这条消息？</string>
+    <string name="chat_recall_expired">超过 2 分钟，不能撤回了</string>
+    <string name="chat_recalled_me">你撤回了一条消息</string>
+    <string name="chat_recalled_peer">对方撤回了一条消息</string>
     <string name="messages_send">发送</string>
     <string name="messages_send_failed">发送失败，稍后再试</string>
     <string name="tool_messages_title">消息列表</string>

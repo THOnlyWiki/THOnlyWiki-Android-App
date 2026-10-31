@@ -84,12 +84,15 @@ public final class MessagesApi {
         public final boolean incoming;
         /** 原始时间（ISO，用于比较间隔） */
         public final String raw;
+        /** 已撤回（内容已被清空，只显示占位） */
+        public final boolean recalled;
 
-        Chat(long id, String text, boolean incoming, String raw) {
+        Chat(long id, String text, boolean incoming, String raw, boolean recalled) {
             this.id = id;
             this.text = text;
             this.incoming = incoming;
             this.raw = raw;
+            this.recalled = recalled;
         }
     }
 
@@ -103,7 +106,8 @@ public final class MessagesApi {
                 continue;
             }
             items.add(new Chat(json.optLong("id"), json.optString("content", ""),
-                    json.optBoolean("incoming", false), json.optString("createAt", "")));
+                    json.optBoolean("incoming", false), json.optString("createAt", ""),
+                    json.optBoolean("recalled", false)));
         }
         return items;
     }
@@ -206,8 +210,10 @@ public final class MessagesApi {
                 continue;
             }
             lastIndex.put(peer, i);
+            boolean recalled = json.optBoolean("recalled", false);
             latest.put(peer, new Item(json.optLong("id"), peer,
-                    json.optString("content", ""), shortTime(json.optString("createAt", "")),
+                    recalled ? "[已撤回]" : json.optString("content", ""),
+                    shortTime(json.optString("createAt", "")),
                     false, peer, json.optString("avatar", "")));
             boolean unreadNow = incoming && !json.optBoolean("read", true);
             unread.put(peer, unreadNow || Boolean.TRUE.equals(unread.get(peer)));
@@ -265,6 +271,28 @@ public final class MessagesApi {
         form.put("to", to);
         form.put("content", content);
         return post(context, MSG + "/send", form);
+    }
+
+    /** 撤回自己发的私信（服务端限制 2 分钟内） */
+    public static Result recall(Context context, long id) throws IOException {
+        Map<String, String> form = new LinkedHashMap<String, String>();
+        form.put("id", String.valueOf(id));
+        return post(context, MSG + "/recall", form);
+    }
+
+    /** 还在撤回时限内吗（服务端也会校验，这里只是决定要不要给长按菜单） */
+    public static boolean canRecall(String raw) {
+        if (raw == null || raw.length() < 19) {
+            return false;
+        }
+        try {
+            java.text.SimpleDateFormat format =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            java.util.Date sent = format.parse(raw);
+            return sent != null && System.currentTimeMillis() - sent.getTime() <= 2 * 60 * 1000L;
+        } catch (java.text.ParseException e) {
+            return false;
+        }
     }
 
     /** 把对话渲染成纯文本（App 端不跑 wikitext） */

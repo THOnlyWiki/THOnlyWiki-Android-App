@@ -75,6 +75,14 @@ public final class ChatController {
         this.adapter = new ChatAdapter();
         listView.setAdapter(adapter);
 
+        listView.setOnItemLongClickListener(new android.widget.AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(android.widget.AdapterView<?> parent, View view,
+                                           int position, long id) {
+                confirmRecall(items.get(position));
+                return true;
+            }
+        });
         root.findViewById(R.id.chatBack).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -220,6 +228,59 @@ public final class ChatController {
         }, "chat-send").start();
     }
 
+    /** 长按自己 2 分钟内的消息 → 确认撤回 */
+    private void confirmRecall(final MessagesApi.Chat chat) {
+        if (chat.incoming || chat.recalled) {
+            return;
+        }
+        if (!MessagesApi.canRecall(chat.raw)) {
+            toast(activity.getString(R.string.chat_recall_expired));
+            return;
+        }
+        new android.app.AlertDialog.Builder(activity)
+                .setMessage(R.string.chat_recall_confirm)
+                .setPositiveButton(R.string.chat_recall, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        doRecall(chat.id);
+                    }
+                })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
+    }
+
+    private void doRecall(final long messageId) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                MessagesApi.Result result = null;
+                try {
+                    result = MessagesApi.recall(activity, messageId);
+                } catch (IOException ignored) {
+                    // 下面统一提示
+                }
+                final MessagesApi.Result done = result;
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (done == null || !done.success) {
+                            toast(done == null || done.message.isEmpty()
+                                    ? activity.getString(R.string.messages_send_failed)
+                                    : done.message);
+                            return;
+                        }
+                        lastSignature = 0L;   // 强制刷新
+                        load(true);
+                    }
+                });
+            }
+        }, "chat-recall").start();
+    }
+
+    private int dp(int value) {
+        return Math.round(activity.getResources().getDisplayMetrics().density * value);
+    }
+
     private void toast(String text) {
         if (text != null && !text.isEmpty()) {
             Toast.makeText(activity, text, Toast.LENGTH_SHORT).show();
@@ -253,15 +314,25 @@ public final class ChatController {
             MessagesApi.Chat chat = items.get(position);
 
             TextView bubble = view.findViewById(R.id.chatBubble);
-            bubble.setText(chat.text);
-            bubble.setBackgroundResource(chat.incoming
-                    ? R.drawable.bg_bubble_in : R.drawable.bg_bubble_out);
-            bubble.setTextColor(activity.getColor(chat.incoming
-                    ? R.color.text_primary : android.R.color.white));
-
-            // 气泡靠哪边：整行是一个 LinearLayout，改它的 gravity
             LinearLayout row = (LinearLayout) view;
-            row.setGravity(chat.incoming ? Gravity.START : Gravity.END);
+
+            if (chat.recalled) {
+                // 撤回后不留气泡，只留一行居中的灰字
+                bubble.setText(chat.incoming ? R.string.chat_recalled_peer : R.string.chat_recalled_me);
+                bubble.setBackground(null);
+                bubble.setTextColor(activity.getColor(R.color.text_tertiary));
+                bubble.setPadding(0, dp(2), 0, dp(2));
+                row.setGravity(Gravity.CENTER_HORIZONTAL);
+            } else {
+                bubble.setText(chat.text);
+                bubble.setBackgroundResource(chat.incoming
+                        ? R.drawable.bg_bubble_in : R.drawable.bg_bubble_out);
+                bubble.setTextColor(activity.getColor(chat.incoming
+                        ? R.color.text_primary : android.R.color.white));
+                bubble.setPadding(dp(13), dp(9), dp(13), dp(9));
+                // 气泡靠哪边：整行是一个 LinearLayout，改它的 gravity
+                row.setGravity(chat.incoming ? Gravity.START : Gravity.END);
+            }
 
             // 时间：只有间隔超过 10 分钟才显示一条，不刷屏
             TextView time = view.findViewById(R.id.chatTime);
