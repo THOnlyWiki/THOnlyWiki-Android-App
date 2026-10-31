@@ -37,6 +37,7 @@ import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.SidebarRepository;
 import cc.thonly.app.data.UpdateChecker;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.data.UserSession;
 import cc.thonly.app.util.AppLog;
 import cc.thonly.app.util.CookieBridge;
@@ -416,6 +417,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         navBuiltIn.setVisibility(sidebar.isReplaceBuiltIn() ? View.GONE : View.VISIBLE);
 
         boolean toolboxInConfig = false;
+        boolean logoutInConfig = false;
         for (AppSidebar.Section section : sidebar.sections()) {
             if (!section.title().isEmpty()) {
                 navDynamic.addView(createSectionTitle(section.title()));
@@ -426,10 +428,16 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                         && pageIdOf(item.page()) == PAGE_TOOLBOX) {
                     toolboxInConfig = true;
                 }
+                if (item.target() == AppSidebar.Target.APP
+                        && "logout".equals(item.page())) {
+                    logoutInConfig = true;
+                }
             }
         }
         // 云端已经给了「百宝箱」入口就不再显示固定的那个，避免出现两个
         navToolboxItem.setVisibility(toolboxInConfig ? View.GONE : View.VISIBLE);
+        // 同理：云端配了「退出登录」，内置账号区那行就收起来
+        navLogoutItem.setVisibility(logoutInConfig ? View.GONE : View.VISIBLE);
         updateNavHighlight();
     }
 
@@ -463,6 +471,15 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     /** 一条配置最终去哪：原生页 / App 内网页 / 系统浏览器 */
     private void route(AppSidebar.Item item) {
         if (item.target() == AppSidebar.Target.APP) {
+            // 动作型条目：不是页面，先拦下来
+            if ("logout".equals(item.page())) {
+                confirmLogout();
+                return;
+            }
+            if ("profile".equals(item.page())) {
+                openProfile();
+                return;
+            }
             int page = pageIdOf(item.page());
             if (page != PAGE_NONE) {
                 selectPage(page);
@@ -532,6 +549,34 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             return PAGE_TEAM;
         }
         return PAGE_NONE;
+    }
+
+    /**
+     * 云控抽屉里的「个人主页」：打开自己的用户页。
+     *
+     * <p>没登录就送去登录页——用户页对匿名用户没意义。
+     */
+    private void openProfile() {
+        if (!session.isLoggedIn()) {
+            selectPage(PAGE_LOGIN);
+            return;
+        }
+        openInWeb(ServerConfig.baseUrl() + "/用户:" + Uri.encode(session.username()));
+    }
+
+    /** 云控抽屉里的「退出登录」：和设置页一样走确认，避免误触 */
+    private void confirmLogout() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.auth_logout)
+                .setMessage(R.string.auth_logout_confirm)
+                .setPositiveButton(R.string.auth_logout, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        loginController.logout();
+                    }
+                })
+                .setNegativeButton(R.string.edit_cancel, null)
+                .show();
     }
 
     private void openInWeb(String url) {
