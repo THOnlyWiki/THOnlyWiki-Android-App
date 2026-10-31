@@ -34,7 +34,13 @@ public final class MessagesController {
     private static final int MODE_NOTIFY = 0;
     private static final int MODE_CHAT = 1;
 
+    /** 点会话时通知宿主打开独立聊天页 */
+    public interface OnOpenChat {
+        void openChat(String peer);
+    }
+
     private final Activity activity;
+    private final OnOpenChat onOpenChat;
     private final TextView tabNotify;
     private final TextView tabChat;
     private final ListView listView;
@@ -44,8 +50,9 @@ public final class MessagesController {
 
     private int mode = MODE_NOTIFY;
 
-    public MessagesController(final Activity activity, View root) {
+    public MessagesController(final Activity activity, View root, OnOpenChat onOpenChat) {
         this.activity = activity;
+        this.onOpenChat = onOpenChat;
         this.tabNotify = root.findViewById(R.id.tabNotify);
         this.tabChat = root.findViewById(R.id.tabChat);
         this.listView = root.findViewById(R.id.messageList);
@@ -61,7 +68,7 @@ public final class MessagesController {
                 if (mode == MODE_NOTIFY) {
                     markRead(item);
                 } else {
-                    openThread(item.peer);
+                    onOpenChat.openChat(item.peer);
                 }
             }
         });
@@ -171,103 +178,6 @@ public final class MessagesController {
                 });
             }
         }, "messages-read").start();
-    }
-
-    // ------------------------------------------------------------ 对话
-
-    private void openThread(final String peer) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final MessagesApi.Result result = MessagesApi.thread(activity, peer);
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!result.success) {
-                                toast(result.message);
-                                return;
-                            }
-                            showThread(peer, result);
-                        }
-                    });
-                } catch (IOException e) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            toast(activity.getString(R.string.messages_load_failed));
-                        }
-                    });
-                }
-            }
-        }, "messages-thread").start();
-    }
-
-    private void showThread(final String peer, MessagesApi.Result result) {
-        String me = new UserSession(activity).username();
-        String transcript = MessagesApi.transcript(result, me);
-
-        ScrollView scroll = new ScrollView(activity);
-        TextView text = new TextView(activity);
-        text.setText(transcript.isEmpty()
-                ? activity.getString(R.string.messages_empty_chat) : transcript);
-        text.setTextSize(13);
-        text.setLineSpacing(6f, 1f);
-        text.setPadding(dp(18), dp(12), dp(18), dp(12));
-        scroll.addView(text);
-
-        LinearLayout container = new LinearLayout(activity);
-        container.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(320));
-        container.addView(scroll, scrollParams);
-
-        final EditText input = new EditText(activity);
-        input.setHint(R.string.messages_reply_hint);
-        input.setMinLines(1);
-        input.setMaxLines(3);
-        container.addView(input);
-
-        new AlertDialog.Builder(activity)
-                .setTitle(peer)
-                .setView(container)
-                .setPositiveButton(R.string.messages_send, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String content = input.getText().toString().trim();
-                        if (content.isEmpty()) {
-                            return;
-                        }
-                        send(peer, content);
-                    }
-                })
-                .setNegativeButton(R.string.dialog_close, null)
-                .show();
-    }
-
-    private void send(final String peer, final String content) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final MessagesApi.Result result = MessagesApi.send(activity, peer, content);
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            toast(result.message);
-                            reload();
-                        }
-                    });
-                } catch (IOException e) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            toast(activity.getString(R.string.messages_send_failed));
-                        }
-                    });
-                }
-            }
-        }, "messages-send").start();
     }
 
     private void toast(String text) {

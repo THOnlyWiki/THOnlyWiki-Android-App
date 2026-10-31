@@ -76,6 +76,69 @@ public final class MessagesApi {
         }
     }
 
+    /** 对话里的一条消息 */
+    public static final class Chat {
+
+        public final long id;
+        public final String text;
+        public final boolean incoming;
+        /** 原始时间（ISO，用于比较间隔） */
+        public final String raw;
+
+        Chat(long id, String text, boolean incoming, String raw) {
+            this.id = id;
+            this.text = text;
+            this.incoming = incoming;
+            this.raw = raw;
+        }
+    }
+
+    /** 把 thread 接口的结果解析成消息列表（按服务端顺序，旧→新） */
+    public static List<Chat> chatItems(Result result) {
+        List<Chat> items = new ArrayList<Chat>();
+        JSONArray array = arrayOf(result, "messages");
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject json = array.optJSONObject(i);
+            if (json == null) {
+                continue;
+            }
+            items.add(new Chat(json.optLong("id"), json.optString("content", ""),
+                    json.optBoolean("incoming", false), json.optString("createAt", "")));
+        }
+        return items;
+    }
+
+    /** ISO 时间 → 「今天 21:33」/「10-30 21:33」 */
+    public static String displayTime(String raw) {
+        if (raw == null || raw.length() < 16) {
+            return raw == null ? "" : raw;
+        }
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(new java.util.Date());
+        String date = raw.substring(0, 10);
+        String clock = raw.substring(11, 16);
+        return date.equals(today) ? clock : raw.substring(5, 10) + " " + clock;
+    }
+
+    /** 两条消息间隔超过 10 分钟才显示时间，避免每条都挂时间戳 */
+    public static boolean needsTime(String previousRaw, String currentRaw) {
+        if (previousRaw == null || previousRaw.isEmpty()) {
+            return true;
+        }
+        if (currentRaw == null || currentRaw.length() < 19) {
+            return false;
+        }
+        try {
+            java.text.SimpleDateFormat format =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            java.util.Date a = format.parse(previousRaw);
+            java.util.Date b = format.parse(currentRaw);
+            return a == null || b == null || b.getTime() - a.getTime() > 10 * 60 * 1000L;
+        } catch (java.text.ParseException e) {
+            return false;
+        }
+    }
+
     // ------------------------------------------------------------ 通知
 
     public static Result notifications(Context context) throws IOException {

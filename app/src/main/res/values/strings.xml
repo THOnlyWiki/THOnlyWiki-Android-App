@@ -63,6 +63,9 @@
     <string name="messages_login_required">登录后才能查看消息</string>
     <string name="messages_load_failed">加载失败，稍后再试</string>
     <string name="messages_reply_hint">输入内容…</string>
+    <string name="chat_hint">说点什么…</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_empty">还没有消息，打个招呼吧</string>
     <string name="messages_send">发送</string>
     <string name="messages_send_failed">发送失败，稍后再试</string>
     <string name="tool_messages_title">消息列表</string>

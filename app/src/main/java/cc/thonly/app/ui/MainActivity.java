@@ -70,6 +70,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final int PAGE_ITINERARY = 9;
     private static final int PAGE_TEAM = 10;
     private static final int PAGE_MESSAGES = 11;
+    private static final int PAGE_CHAT = 12;
 
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
@@ -101,6 +102,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private ItineraryController itineraryController;
     private TeamController teamController;
     private MessagesController messagesController;
+    private ChatController chatController;
 
     private View[] pages;
     private View scrim;
@@ -159,6 +161,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         View itineraryPage = getLayoutInflater().inflate(R.layout.view_itinerary, content, false);
         View teamPage = getLayoutInflater().inflate(R.layout.view_team, content, false);
         View messagesPage = getLayoutInflater().inflate(R.layout.view_messages, content, false);
+        View chatPage = getLayoutInflater().inflate(R.layout.view_chat, content, false);
         content.addView(listPage);
         content.addView(calendarPage);
         content.addView(webPage);
@@ -171,9 +174,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         content.addView(itineraryPage);
         content.addView(teamPage);
         content.addView(messagesPage);
+        content.addView(chatPage);
         pages = new View[]{listPage, calendarPage, webPage, loginPage, registerPage,
                 settingsPage, toolboxPage, musicPage, glossaryPage, itineraryPage, teamPage,
-                messagesPage};
+                messagesPage, chatPage};
 
         listController = new ListController(this, listPage, store, actions,
                 new ActivityEditor(session));
@@ -216,7 +220,19 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         glossaryController = new GlossaryController(this, glossaryPage);
         itineraryController = new ItineraryController(this, itineraryPage);
         teamController = new TeamController(this, teamPage);
-        messagesController = new MessagesController(this, messagesPage);
+        chatController = new ChatController(this, chatPage, new Runnable() {
+            @Override
+            public void run() {
+                selectPage(PAGE_MESSAGES);
+            }
+        });
+        messagesController = new MessagesController(this, messagesPage,
+                new MessagesController.OnOpenChat() {
+                    @Override
+                    public void openChat(String peer) {
+                        openChatPage(peer);
+                    }
+                });
         actions.setOnOpenTeam(new EventActions.OnOpenTeam() {
             @Override
             public void open(Event event) {
@@ -631,6 +647,12 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 .show();
     }
 
+    /** 打开某个人的对话页（独立页面，不是弹窗） */
+    private void openChatPage(String peer) {
+        chatController.open(peer);
+        selectPage(PAGE_CHAT);
+    }
+
     private void openInWeb(String url) {
         webController.openUrl(url);
         selectPage(PAGE_WEB);
@@ -710,6 +732,11 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         }
         if (page == PAGE_MESSAGES) {
             messagesController.onShown();
+        }
+        if (page == PAGE_CHAT) {
+            chatController.onShown();
+        } else {
+            chatController.onHidden();
         }
         if (page == PAGE_ITINERARY) {
             // 关注可能在别的页面改过，每次进来都重读
