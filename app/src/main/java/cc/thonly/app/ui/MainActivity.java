@@ -480,6 +480,15 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 openProfile();
                 return;
             }
+            if ("preferences".equals(item.page())) {
+                openInWeb(ServerConfig.baseUrl() + "/特殊:" + Uri.encode("参数设置"));
+                return;
+            }
+            // 以 / 开头 = 直接当站内路径打开：以后加新特殊页不用等 App 发版
+            if (item.page().startsWith("/")) {
+                openInWeb(ServerConfig.baseUrl() + item.page());
+                return;
+            }
             int page = pageIdOf(item.page());
             if (page != PAGE_NONE) {
                 selectPage(page);
