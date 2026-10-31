@@ -55,6 +55,8 @@ public final class MessagesController {
     private final android.os.Handler debounce =
             new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable pendingSearch;
+    /** 请求序号：只有最后一次发出的请求才有资格刷新界面 */
+    private int requestSeq;
 
     public MessagesController(final Activity activity, View root, OnOpenChat onOpenChat) {
         this.activity = activity;
@@ -194,6 +196,7 @@ public final class MessagesController {
             return;
         }
         final int target = mode;
+        final int seq = ++requestSeq;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -207,6 +210,11 @@ public final class MessagesController {
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            // 切了标签或又发起了新请求：这次的结果已经过期，直接丢掉。
+                            // 否则「私信」的慢响应会在切到「通知」之后才到，把私信列表画到通知页上。
+                            if (seq != requestSeq) {
+                                return;
+                            }
                             if (!result.success) {
                                 items.clear();
                                 adapter.notifyDataSetChanged();
