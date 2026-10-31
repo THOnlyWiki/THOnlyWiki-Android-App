@@ -1,5 +1,5 @@
 plugins {
-    id 'com.android.application' version '9.4.1'
+    id 'com.android.application' version '8.7.2'
 }
 
 // 发布签名：同目录下有 keystore.properties 就用它，没有就退回 debug 签名，
