@@ -46,7 +46,8 @@ public final class ReminderReceiver extends BroadcastReceiver {
             body.append(context.getString(R.string.reminder_body_fallback));
         }
 
-        Notifications.show(context, eventId, title, body.toString());
+        // 通知 ID 带上时段，前一天和当天两条各自独立，不会互相覆盖
+        Notifications.show(context, eventId * 10 + slot, title, body.toString());
         ReminderScheduler.reschedule(context);
     }
 }

@@ -86,6 +86,43 @@ public final class SettingsController {
         reminderHint.setText(R.string.reminder_hint_on);
     }
 
+    /**
+     * 首次开启时说明后台限制。
+     *
+     * <p>国内 ROM 会把后台闹钟砍掉，光有通知权限不够——不讲清楚，
+     * 用户会以为「开了提醒但从来不准」是 App 的锅。
+     */
+    private void showBackgroundGuideOnce() {
+        if (reminderSettings.hasShownGuide()) {
+            return;
+        }
+        reminderSettings.markGuideShown();
+        new android.app.AlertDialog.Builder(activity)
+                .setTitle(R.string.reminder_guide_title)
+                .setMessage(R.string.reminder_guide_body)
+                .setPositiveButton(R.string.reminder_guide_go,
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which) {
+                                openAppSettings();
+                            }
+                        })
+                .setNegativeButton(R.string.reminder_guide_ok, null)
+                .show();
+    }
+
+    /** 跳系统「应用信息」页，用户在那里能改省电策略 / 自启动 */
+    private void openAppSettings() {
+        try {
+            android.content.Intent intent = new android.content.Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(android.net.Uri.parse("package:" + activity.getPackageName()));
+            activity.startActivity(intent);
+        } catch (android.content.ActivityNotFoundException ignored) {
+            // 少数定制系统没有这个页面，忽略即可
+        }
+    }
+
     /** 请求通知权限（Android 13+）；旧版本直接跳系统通知设置 */
     private void ensureNotificationPermission() {
         if (cc.thonly.app.notify.Notifications.canPost(activity)) {
@@ -165,6 +202,7 @@ public final class SettingsController {
                 reminderSettings.setEnabled(isChecked);
                 if (isChecked) {
                     ensureNotificationPermission();
+                    showBackgroundGuideOnce();
                 }
                 updateReminderHint();
                 cc.thonly.app.notify.ReminderScheduler.reschedule(activity);

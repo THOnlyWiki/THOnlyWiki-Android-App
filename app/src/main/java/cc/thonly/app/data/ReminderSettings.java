@@ -13,6 +13,7 @@ public final class ReminderSettings {
 
     private static final String PREFS = "wikikernel.reminders";
     private static final String KEY_ENABLED = "enabled";
+    private static final String KEY_GUIDED = "guided";
 
     private final SharedPreferences preferences;
 
@@ -27,5 +28,14 @@ public final class ReminderSettings {
 
     public void setEnabled(boolean enabled) {
         preferences.edit().putBoolean(KEY_ENABLED, enabled).apply();
+    }
+
+    /** 后台限制的说明弹过没有（只弹一次，别每次开开关都烦人） */
+    public boolean hasShownGuide() {
+        return preferences.getBoolean(KEY_GUIDED, false);
+    }
+
+    public void markGuideShown() {
+        preferences.edit().putBoolean(KEY_GUIDED, true).apply();
     }
 }

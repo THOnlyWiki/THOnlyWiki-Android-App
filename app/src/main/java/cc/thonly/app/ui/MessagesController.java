@@ -155,6 +155,16 @@ public final class MessagesController {
                         if (!keyword.equals(searchBox.getText().toString().trim())) {
                             return;   // 已经有更新的输入了，丢掉这次结果
                         }
+                        if (!loaded.success) {
+                            // 401 / 网络错误 ≠ 搜不到人，别把错误说成"没找到"
+                            items.clear();
+                            adapter.notifyDataSetChanged();
+                            emptyView.setText(loaded.message.isEmpty()
+                                    ? activity.getString(R.string.messages_load_failed)
+                                    : loaded.message);
+                            emptyView.setVisibility(View.VISIBLE);
+                            return;
+                        }
                         searching = true;
                         items.clear();
                         items.addAll(found);
@@ -167,8 +177,11 @@ public final class MessagesController {
         }, "messages-search").start();
     }
 
-    /** 每次进入页面都重拉 */
+    /** 每次进入页面都重拉；顺带清掉上次留下的搜索词，别让框里的字和列表对不上 */
     public void onShown() {
+        if (!searchBox.getText().toString().isEmpty()) {
+            searchBox.setText("");
+        }
         reload();
     }
 

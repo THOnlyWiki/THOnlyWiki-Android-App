@@ -174,6 +174,10 @@
     <string name="reminder_hint_on">收藏的活动：前一天 20:00、当天 08:00 各提醒一次</string>
     <string name="reminder_hint_off">已关闭，收藏的活动不会提醒</string>
     <string name="reminder_hint_permission">通知权限未开启，点这里去开启</string>
+    <string name="reminder_guide_title">让提醒准时到达</string>
+    <string name="reminder_guide_body">部分系统（小米、华为、OPPO、vivo 等）会限制后台应用，导致提醒延迟或收不到。\n\n建议在系统设置里做两件事：\n· 省电策略 → 无限制\n· 允许自启动</string>
+    <string name="reminder_guide_go">去设置</string>
+    <string name="reminder_guide_ok">知道了</string>
     <string name="reminder_channel">活动提醒</string>
     <string name="reminder_channel_desc">收藏的活动开始前提醒你</string>
     <string name="reminder_title_evening">明天 · %1$s</string>

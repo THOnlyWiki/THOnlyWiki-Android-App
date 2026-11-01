@@ -149,6 +149,8 @@ public final class ChatController {
                     result = MessagesApi.thread(activity, target);
                 } catch (IOException ignored) {
                     // 网络抖动：这一轮跳过，下一轮再试
+                } catch (RuntimeException ignored) {
+                    // 解析异常等也别让线程带着 loading=true 死掉，否则轮询从此停摆
                 }
                 final MessagesApi.Result loaded = result;
                 activity.runOnUiThread(new Runnable() {
@@ -174,7 +176,10 @@ public final class ChatController {
     private void apply(List<MessagesApi.Chat> loaded, boolean scrollToBottom) {
         long signature = 0L;
         for (MessagesApi.Chat chat : loaded) {
+            // 只算 id 的话，对方撤回（id 不变、内容变空）会被当成"没变化"而不刷新
             signature = signature * 31 + chat.id;
+            signature = signature * 31 + (chat.recalled ? 1 : 0);
+            signature = signature * 31 + chat.text.length();
         }
         if (signature == lastSignature && !scrollToBottom) {
             return;

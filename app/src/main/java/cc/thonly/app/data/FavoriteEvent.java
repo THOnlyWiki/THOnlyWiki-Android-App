@@ -92,20 +92,13 @@ public final class FavoriteEvent {
         return "已结束";
     }
 
-    /** 活动日期（未定档返回 null）；提醒排期要用，公开 */
+    /**
+     * 活动日期（未定档返回 null）；提醒排期要用，公开。
+     *
+     * <p>统一走 {@link EventDate}：收藏里存的是 {@code yyyy-MM-dd}，
+     * 服务端给的是 {@code yyyy/M/d}，两种格式必须由同一个解析器认。
+     */
     public Calendar calendar() {
-        if (date.isEmpty()) {
-            return null;
-        }
-        try {
-            String[] parts = date.split("-");
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]) - 1,
-                    Integer.parseInt(parts[2]), 0, 0, 0);
-            calendar.set(Calendar.MILLISECOND, 0);
-            return calendar;
-        } catch (Exception e) {
-            return null;
-        }
+        return EventDate.parse(date).toCalendar();
     }
 }
