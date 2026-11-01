@@ -75,6 +75,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     /** 不是页面，只用于「这一行没有对应的原生页」 */
     private static final int PAGE_NONE = -1;
 
+    /** 通知点进来时用：intent 里带 {@link #EXTRA_OPEN_PAGE} 指定落到哪一页 */
+    public static final String EXTRA_OPEN_PAGE = "openPage";
+    public static final String PAGE_NAME_ITINERARY = "itinerary";
+
     /** 存档放在 filesDir，系统不会像 cacheDir 那样在空间紧张时清掉 */
     private static final String CACHE_DIR_NAME = "activity";
     private static final long DRAWER_ANIMATION_MS = 200L;
@@ -135,6 +139,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
         AppLog.init(this);
         installCrashHandler();
+
+        // 提醒：建渠道 + 每次启动整表重排（ROM 清理 / 应用更新会丢闹钟）
+        cc.thonly.app.notify.Notifications.ensureChannel(this);
+        cc.thonly.app.notify.ReminderScheduler.reschedule(this);
 
         settings = new SettingsStore(this);
         session = new UserSession(this);
@@ -267,6 +275,26 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         store.load(currentYear(), false);
         checkUpdateOnStart();
         loadRemoteSidebar();
+        openFromIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openFromIntent(intent);
+    }
+
+    /** 从通知点进来 → 落到指定页面 */
+    private void openFromIntent(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        String page = intent.getStringExtra(EXTRA_OPEN_PAGE);
+        intent.removeExtra(EXTRA_OPEN_PAGE);
+        if (PAGE_NAME_ITINERARY.equals(page)) {
+            selectPage(PAGE_ITINERARY);
+        }
     }
 
     // ------------------------------------------------------------ 日志
@@ -860,6 +888,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        settingsController.onPermissionResult();
         actions.onRequestPermissionsResult(requestCode, grantResults);
     }
 

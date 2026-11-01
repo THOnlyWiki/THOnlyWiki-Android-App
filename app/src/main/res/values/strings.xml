@@ -170,6 +170,15 @@
     <string name="settings_group_update">更新</string>
     <string name="settings_check_update">检查更新</string>
     <string name="settings_auto_check">自动检查更新</string>
+    <string name="settings_reminder">活动提醒</string>
+    <string name="reminder_hint_on">收藏的活动：前一天 20:00、当天 08:00 各提醒一次</string>
+    <string name="reminder_hint_off">已关闭，收藏的活动不会提醒</string>
+    <string name="reminder_hint_permission">通知权限未开启，点这里去开启</string>
+    <string name="reminder_channel">活动提醒</string>
+    <string name="reminder_channel_desc">收藏的活动开始前提醒你</string>
+    <string name="reminder_title_evening">明天 · %1$s</string>
+    <string name="reminder_title_today">今天 · %1$s</string>
+    <string name="reminder_body_fallback">记得确认时间地点</string>
     <string name="settings_group_about">关于</string>
     <string name="settings_group_developer">开发者</string>
     <string name="settings_server">服务器地址</string>

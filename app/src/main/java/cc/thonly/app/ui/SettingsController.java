@@ -27,6 +27,8 @@ import cc.thonly.app.util.LogFileProvider;
 /** 设置页：版本信息、自动检查更新、下载最新版、清除缓存。 */
 public final class SettingsController {
 
+    private static final int REQUEST_NOTIFICATIONS = 0x3E01;
+
     private final Activity activity;
     private final SettingsStore settings;
     private final UpdateChecker updateChecker;
@@ -39,6 +41,9 @@ public final class SettingsController {
     private final TextView webViewValue;
     private final TextView serverValue;
     private final Switch autoCheckSwitch;
+    private final Switch reminderSwitch;
+    private final TextView reminderHint;
+    private final cc.thonly.app.data.ReminderSettings reminderSettings;
 
     public SettingsController(Activity activity, View root, SettingsStore settings,
                               UpdateChecker updateChecker, AppVersion currentVersion, FileCache cache) {
@@ -53,6 +58,9 @@ public final class SettingsController {
         this.webViewValue = root.findViewById(R.id.webViewValue);
         this.serverValue = root.findViewById(R.id.serverValue);
         this.autoCheckSwitch = root.findViewById(R.id.autoCheckUpdate);
+        this.reminderSwitch = root.findViewById(R.id.reminderSwitch);
+        this.reminderHint = root.findViewById(R.id.reminderHint);
+        this.reminderSettings = new cc.thonly.app.data.ReminderSettings(activity);
 
         bind(root);
     }
@@ -60,7 +68,48 @@ public final class SettingsController {
     public void onShown() {
         versionValue.setText(currentVersion.name());
         autoCheckSwitch.setChecked(settings.isAutoCheckUpdate());
+        reminderSwitch.setChecked(reminderSettings.isEnabled());
+        updateReminderHint();
         updateServerValue();
+    }
+
+    /** 副标题随开关和通知权限变：权限没给的时候得让用户知道为什么收不到 */
+    private void updateReminderHint() {
+        if (!reminderSettings.isEnabled()) {
+            reminderHint.setText(R.string.reminder_hint_off);
+            return;
+        }
+        if (!cc.thonly.app.notify.Notifications.canPost(activity)) {
+            reminderHint.setText(R.string.reminder_hint_permission);
+            return;
+        }
+        reminderHint.setText(R.string.reminder_hint_on);
+    }
+
+    /** 请求通知权限（Android 13+）；旧版本直接跳系统通知设置 */
+    private void ensureNotificationPermission() {
+        if (cc.thonly.app.notify.Notifications.canPost(activity)) {
+            return;
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            activity.requestPermissions(
+                    new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
+        } else {
+            try {
+                android.content.Intent intent = new android.content.Intent(
+                        android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
+                activity.startActivity(intent);
+            } catch (android.content.ActivityNotFoundException ignored) {
+                // 打不开就算了，开关照常工作，只是收不到通知
+            }
+        }
+    }
+
+    /** 权限弹窗回来 */
+    public void onPermissionResult() {
+        updateReminderHint();
+        cc.thonly.app.notify.ReminderScheduler.reschedule(activity);
     }
 
     private void updateServerValue() {
@@ -110,6 +159,25 @@ public final class SettingsController {
     }
 
     private void bind(View root) {
+        reminderSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                reminderSettings.setEnabled(isChecked);
+                if (isChecked) {
+                    ensureNotificationPermission();
+                }
+                updateReminderHint();
+                cc.thonly.app.notify.ReminderScheduler.reschedule(activity);
+            }
+        });
+        root.findViewById(R.id.rowReminder).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (reminderSettings.isEnabled()) {
+                    ensureNotificationPermission();
+                }
+            }
+        });
         autoCheckSwitch.setChecked(settings.isAutoCheckUpdate());
         autoCheckSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

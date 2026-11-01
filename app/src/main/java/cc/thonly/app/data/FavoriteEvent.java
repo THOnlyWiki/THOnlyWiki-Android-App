@@ -92,7 +92,8 @@ public final class FavoriteEvent {
         return "已结束";
     }
 
-    private Calendar calendar() {
+    /** 活动日期（未定档返回 null）；提醒排期要用，公开 */
+    public Calendar calendar() {
         if (date.isEmpty()) {
             return null;
         }

@@ -34,11 +34,13 @@ public final class Favorites {
     private static final String KEY_LEGACY_IDS = "ids";
 
     private final SharedPreferences preferences;
+    private final Context context;
     private final Map<String, FavoriteEvent> items = new LinkedHashMap<String, FavoriteEvent>();
     private final Set<String> legacyIds = new HashSet<String>();
 
     public Favorites(Context context) {
-        this.preferences = context.getApplicationContext()
+        this.context = context.getApplicationContext();
+        this.preferences = this.context
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         loadItems();
         Set<String> stored = preferences.getStringSet(KEY_LEGACY_IDS, null);
@@ -114,6 +116,8 @@ public final class Favorites {
         // getStringSet 返回的集合不能直接改，写回时给个副本
         preferences.edit().putStringSet(KEY_LEGACY_IDS, new HashSet<String>(legacyIds)).apply();
         saveItems();
+        // 收藏变了就重排提醒：新收藏要排，取消收藏要把闹钟撤掉
+        cc.thonly.app.notify.ReminderScheduler.reschedule(context);
         return nowFavorite;
     }
 
