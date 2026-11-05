@@ -2,6 +2,7 @@ package cc.thonly.app.notify;
 
 import android.Manifest;
 import android.app.Notification;
+import android.app.AppOpsManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -46,7 +47,16 @@ public final class Notifications {
         }
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        return manager != null && manager.areNotificationsEnabled();
+        if (manager == null) {
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return manager.areNotificationsEnabled();
+        }
+        // Android 6 (minSdk 23) predates NotificationManager.areNotificationsEnabled().
+        AppOpsManager operations = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+        return operations == null || operations.checkOpNoThrow("android:post_notification",
+                context.getApplicationInfo().uid, context.getPackageName()) == AppOpsManager.MODE_ALLOWED;
     }
 
     /**

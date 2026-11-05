@@ -1,5 +1,17 @@
 # thonly.cc 接口记录
 
+## App 1.5.4 注册问答
+
+`GET /api/registration-quiz/challenge` 返回当前开关和随机题目，开启时结构为
+`{"required":true,"index":0,"question":"题目"}`；关闭或题库为空时返回 `{"required":false}`，不返回答案。
+
+若接口返回 HTTP 404，App 获取 `/wiki/Special:CreateAccount`（自动跟随站点前缀重定向），
+从 `wiki-register-form` 读取题目及隐藏的 `registerQuizIndex`，兼容未升级问答插件的服务器。
+无法识别注册表单或网络出错时提示重试，不把失败当成验证码关闭。
+
+向 `POST /api/user/register` 提交原账号字段，并在需要验证时附加 `registerQuizIndex`、`registerAnswer`。
+服务端返回的错误直接显示；重新取题保留账号、密码、邮箱并清空答案。
+
 抓取时间：2026-10-28。站点 `generator` 为 `WikiKernel`。
 
 ## 一、活动数据接口（App 实际使用）

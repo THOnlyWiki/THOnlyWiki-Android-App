@@ -1,6 +1,7 @@
 package cc.thonly.app.ui;
 
 import android.app.Activity;
+import android.text.Html;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -13,6 +14,8 @@ import cc.thonly.app.R;
 import cc.thonly.app.data.AuthApi;
 import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.UserSession;
+import cc.thonly.app.data.RegistrationQuiz;
+import cc.thonly.app.data.ServerConfig;
 import cc.thonly.app.util.CookieBridge;
 
 /** 注册页：走 {@code /api/user/register}，注册成功后自动保持登录。 */
@@ -29,6 +32,15 @@ public final class RegisterController {
     private final EditText emailInput;
     private final TextView errorView;
     private final Button submitButton;
+    private final View quizGroup;
+    private final TextView quizQuestion;
+    private final TextView quizStatus;
+    private final EditText quizAnswer;
+    private final Button quizRefresh;
+    private RegistrationQuiz quiz;
+    private boolean quizLoading;
+    private boolean submitting;
+    private int quizRequest;
 
     public RegisterController(Activity activity, View root, UserSession session, AuthHost host) {
         this.activity = activity;
@@ -40,6 +52,13 @@ public final class RegisterController {
         this.emailInput = root.findViewById(R.id.registerEmail);
         this.errorView = root.findViewById(R.id.registerError);
         this.submitButton = root.findViewById(R.id.registerSubmit);
+        this.quizGroup = root.findViewById(R.id.registerQuizGroup);
+        this.quizQuestion = root.findViewById(R.id.registerQuizQuestion);
+        this.quizStatus = root.findViewById(R.id.registerQuizStatus);
+        this.quizAnswer = root.findViewById(R.id.registerQuizAnswer);
+        this.quizRefresh = root.findViewById(R.id.registerQuizRefresh);
+        submitButton.setEnabled(false);
+        quizRefresh.setOnClickListener(v -> loadQuiz(false));
 
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -56,14 +75,62 @@ public final class RegisterController {
     }
 
     public void onShown() {
-        hideError();
+        loadQuiz(false);
+    }
+
+    private void loadQuiz(boolean keepError) {
+        if (submitting) { return; }
+        final int request = ++quizRequest;
+        final String server = ServerConfig.baseUrl();
+        quizLoading = true;
+        quiz = null;
+        quizAnswer.setText("");
+        quizGroup.setVisibility(View.GONE);
+        quizStatus.setText(R.string.auth_quiz_loading);
+        quizStatus.setVisibility(View.VISIBLE);
+        quizRefresh.setVisibility(View.VISIBLE);
+        if (!keepError) { hideError(); }
+        updateButtons();
+        new Thread(() -> {
+            try {
+                final RegistrationQuiz loaded = authApi.registrationQuiz();
+                activity.runOnUiThread(() -> {
+                    if (!currentRequest(request, server)) { return; }
+                    quizLoading = false;
+                    quiz = loaded;
+                    quizStatus.setVisibility(View.GONE);
+                    quizGroup.setVisibility(loaded.required() ? View.VISIBLE : View.GONE);
+                    // 旧服务器返回 HTML 实体，转为纯文本；原生 TextView 不执行网页内容。
+                    quizQuestion.setText(loaded.htmlQuestion()
+                            ? Html.fromHtml(loaded.question()).toString() : loaded.question());
+                    quizRefresh.setVisibility(loaded.required() ? View.VISIBLE : View.GONE);
+                    updateButtons();
+                });
+            } catch (EventApiException e) {
+                activity.runOnUiThread(() -> {
+                    if (!currentRequest(request, server)) { return; }
+                    quizLoading = false;
+                    quizStatus.setVisibility(View.GONE);
+                    showError(activity.getString(R.string.auth_quiz_load_error));
+                    updateButtons();
+                });
+            }
+        }, "registration-quiz").start();
+    }
+
+    private boolean currentRequest(int request, String server) {
+        return request == quizRequest && server.equals(ServerConfig.baseUrl())
+                && !activity.isFinishing() && !activity.isDestroyed();
     }
 
     private void submit() {
+        if (submitting || quizLoading || quiz == null) { return; }
         final String username = usernameInput.getText().toString().trim();
         final String password = passwordInput.getText().toString();
         String confirm = confirmInput.getText().toString();
         final String email = emailInput.getText().toString().trim();
+        final RegistrationQuiz challenge = quiz;
+        final String answer = quizAnswer.getText().toString().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
             showError(activity.getString(R.string.auth_need_input));
@@ -71,6 +138,11 @@ public final class RegisterController {
         }
         if (!password.equals(confirm)) {
             showError(activity.getString(R.string.auth_password_mismatch));
+            return;
+        }
+        if (challenge.required() && answer.isEmpty()) {
+            showError(activity.getString(R.string.auth_quiz_answer_required));
+            quizAnswer.requestFocus();
             return;
         }
 
@@ -82,7 +154,7 @@ public final class RegisterController {
             @Override
             public void run() {
                 try {
-                    AuthApi.Result result = authApi.register(username, password, password, email, timeZone);
+                    AuthApi.Result result = authApi.register(username, password, password, email, timeZone, challenge, answer);
                     // 个别实现注册后不下发 Cookie，补一次登录保证进站即已登录
                     if (result.isSuccess() && result.cookies().isEmpty()) {
                         result = authApi.login(username, password, true);
@@ -111,6 +183,7 @@ public final class RegisterController {
         setBusy(false);
         if (!result.isSuccess()) {
             showError(result.message());
+            loadQuiz(true);
             return;
         }
         String name = result.username().isEmpty() ? fallbackName : result.username();
@@ -119,13 +192,20 @@ public final class RegisterController {
 
         passwordInput.setText("");
         confirmInput.setText("");
+        quizAnswer.setText("");
         Toast.makeText(activity, R.string.auth_register_success, Toast.LENGTH_SHORT).show();
         host.onAuthenticated();
     }
 
     private void setBusy(boolean busy) {
-        submitButton.setEnabled(!busy);
-        submitButton.setText(busy ? R.string.auth_submitting : R.string.auth_register_button);
+        submitting = busy;
+        updateButtons();
+    }
+
+    private void updateButtons() {
+        submitButton.setEnabled(!submitting && !quizLoading && quiz != null);
+        quizRefresh.setEnabled(!submitting && !quizLoading);
+        submitButton.setText(submitting ? R.string.auth_submitting : R.string.auth_register_button);
     }
 
     private void showError(String message) {

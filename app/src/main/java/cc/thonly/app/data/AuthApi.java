@@ -8,8 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import cc.thonly.app.AppConfig;
 import cc.thonly.app.util.FormPost;
+import cc.thonly.app.util.HttpClient;
 
 /**
  * 登录 / 注册接口。
@@ -70,12 +70,36 @@ public final class AuthApi {
 
     public Result register(String username, String password, String confirmPassword,
                            String email, String timeZone) throws EventApiException {
+        return register(username, password, confirmPassword, email, timeZone, null, "");
+    }
+
+    public RegistrationQuiz registrationQuiz() throws EventApiException {
+        String baseUrl = ServerConfig.baseUrl();
+        try {
+            String body;
+            try {
+                body = HttpClient.getText(baseUrl + "/api/registration-quiz/challenge");
+            } catch (HttpClient.HttpStatusException e) {
+                if (e.status() != 404) { throw e; }
+                return RegistrationQuiz.fromRegistrationHtml(HttpClient.getText(baseUrl + "/wiki/Special%3ACreateAccount"));
+            }
+            JSONObject data = new JSONObject(body);
+            if (!(data.opt("required") instanceof Boolean)) { throw new IOException("Invalid registration challenge response"); }
+            return new RegistrationQuiz(data.getBoolean("required"), data.optInt("index", -1), data.optString("question", ""));
+        } catch (IOException | JSONException e) {
+            throw new EventApiException("无法获取注册验证，请重试", e);
+        }
+    }
+
+    public Result register(String username, String password, String confirmPassword,
+                           String email, String timeZone, RegistrationQuiz quiz, String answer) throws EventApiException {
         Map<String, String> form = new LinkedHashMap<String, String>();
         form.put("username", username);
         form.put("password", password);
         form.put("confirmPassword", confirmPassword);
         form.put("email", email == null ? "" : email);
         form.put("timeZone", timeZone == null ? "" : timeZone);
+        if (quiz != null) { quiz.appendTo(form, answer); }
         return submit(REGISTER_PATH, form);
     }
 

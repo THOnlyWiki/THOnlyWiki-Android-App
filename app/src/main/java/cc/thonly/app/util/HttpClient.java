@@ -13,6 +13,17 @@ import cc.thonly.app.AppConfig;
 /** 极简 HTTP 客户端，只做 GET 取文本，不引第三方网络库。 */
 public final class HttpClient {
 
+    public static final class HttpStatusException extends IOException {
+        private final int status;
+
+        HttpStatusException(int status) {
+            super("HTTP " + status);
+            this.status = status;
+        }
+
+        public int status() { return status; }
+    }
+
     private HttpClient() {
     }
 
@@ -38,7 +49,7 @@ public final class HttpClient {
             InputStream stream = success ? connection.getInputStream() : connection.getErrorStream();
             String body = readAll(stream);
             if (!success) {
-                throw new IOException("HTTP " + status);
+                throw new HttpStatusException(status);
             }
             return body;
         } finally {

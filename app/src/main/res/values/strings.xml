@@ -300,4 +300,9 @@
     <string name="update_go">前往下载</string>
     <string name="update_later">以后再说</string>
     <string name="update_never">不再提醒该版本</string>
+    <string name="auth_quiz_loading">正在加载注册验证…</string>
+    <string name="auth_quiz_answer">请输入问题的答案</string>
+    <string name="auth_quiz_answer_required">请先回答注册验证问题</string>
+    <string name="auth_quiz_refresh">刷新验证 / 重试</string>
+    <string name="auth_quiz_load_error">无法获取注册验证。请检查网络或确认服务器开放注册，然后点击重试。</string>
 </resources>
