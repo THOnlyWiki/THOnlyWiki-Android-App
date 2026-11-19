@@ -203,7 +203,17 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         loginController = new LoginController(this, loginPage, session, this);
         registerController = new RegisterController(this, registerPage, session, this);
         settingsController = new SettingsController(this, settingsPage, settings,
-                updateChecker, currentVersion, cache);
+                updateChecker, currentVersion, cache,
+                new SettingsController.ServerChangeListener() {
+                    @Override
+                    public void onServerChanged() {
+                        // Cookie 和登录态属于旧服务器；换地址后继续带着只会串号
+                        session.clear();
+                        CookieBridge.clear();
+                        // 离线存档里也是旧服务器的事件，留着会误导用户
+                        cache.clear();
+                    }
+                });
         toolboxController = new ToolboxController(this, toolboxPage, new ToolboxController.Navigator() {
             @Override
             public void openMusic() {
@@ -886,8 +896,23 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     // ------------------------------------------------------------ 生命周期
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // 网页里的文件选择（上传文件 / 头像 / 编辑器插图等）由此交回 WebView
+        if (webController != null
+                && webController.onActivityResult(requestCode, resultCode, data)) {
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // 网页 blob 下载在 Android 10 以下要写公共下载目录，权限回来由 WebController 接手
+        if (webController != null
+                && webController.onRequestPermissionsResult(requestCode, grantResults)) {
+            return;
+        }
         settingsController.onPermissionResult();
         actions.onRequestPermissionsResult(requestCode, grantResults);
     }
@@ -895,6 +920,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            // 网页全屏（视频 / 图片查看器）时，先退出全屏而不是翻页
+            if (webController != null && webController.onBackPressed()) {
+                return true;
+            }
             if (drawerOpen) {
                 closeDrawer();
                 return true;

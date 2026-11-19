@@ -29,11 +29,17 @@ public final class SettingsController {
 
     private static final int REQUEST_NOTIFICATIONS = 0x3E01;
 
+    /** 服务器地址真的变了之后，由 Activity 清理旧服务器的登录态和存档 */
+    public interface ServerChangeListener {
+        void onServerChanged();
+    }
+
     private final Activity activity;
     private final SettingsStore settings;
     private final UpdateChecker updateChecker;
     private final FileCache cache;
     private final AppVersion currentVersion;
+    private final ServerChangeListener serverChangeListener;
 
     private final TextView versionValue;
     private final TextView aboutText;
@@ -46,12 +52,14 @@ public final class SettingsController {
     private final cc.thonly.app.data.ReminderSettings reminderSettings;
 
     public SettingsController(Activity activity, View root, SettingsStore settings,
-                              UpdateChecker updateChecker, AppVersion currentVersion, FileCache cache) {
+                              UpdateChecker updateChecker, AppVersion currentVersion, FileCache cache,
+                              ServerChangeListener serverChangeListener) {
         this.activity = activity;
         this.settings = settings;
         this.updateChecker = updateChecker;
         this.currentVersion = currentVersion;
         this.cache = cache;
+        this.serverChangeListener = serverChangeListener;
         this.versionValue = root.findViewById(R.id.versionValue);
         this.aboutText = root.findViewById(R.id.aboutText);
         this.deviceModelValue = root.findViewById(R.id.deviceModelValue);
@@ -170,9 +178,17 @@ public final class SettingsController {
                 .setPositiveButton(R.string.edit_save, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
+                        String previous = ServerConfig.baseUrl();
                         if (ServerConfig.setBaseUrl(input.getText().toString())) {
-                            Toast.makeText(activity, R.string.settings_server_saved,
-                                    Toast.LENGTH_SHORT).show();
+                            boolean changed = !previous.equals(ServerConfig.baseUrl());
+                            if (changed) {
+                                serverChangeListener.onServerChanged();
+                                Toast.makeText(activity, R.string.settings_server_logged_out,
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(activity, R.string.settings_server_saved,
+                                        Toast.LENGTH_SHORT).show();
+                            }
                             // 旧的 EventStore、WebView 还拿着老地址，整体重建最省事
                             activity.recreate();
                         } else {
@@ -185,9 +201,16 @@ public final class SettingsController {
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                String previous = ServerConfig.baseUrl();
                                 ServerConfig.reset();
-                                Toast.makeText(activity, R.string.settings_server_saved,
-                                        Toast.LENGTH_SHORT).show();
+                                if (!previous.equals(ServerConfig.baseUrl())) {
+                                    serverChangeListener.onServerChanged();
+                                    Toast.makeText(activity, R.string.settings_server_logged_out,
+                                            Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(activity, R.string.settings_server_saved,
+                                            Toast.LENGTH_SHORT).show();
+                                }
                                 activity.recreate();
                             }
                         })

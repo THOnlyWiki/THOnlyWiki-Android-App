@@ -17,6 +17,7 @@ import java.util.TimeZone;
 
 import cc.thonly.app.R;
 import cc.thonly.app.data.Event;
+import cc.thonly.app.data.ServerConfig;
 
 /**
  * 直接把活动塞进系统日历的「新建日程」界面。
@@ -28,7 +29,6 @@ public final class CalendarInserter {
 
     private static final long MILLIS_PER_DAY = 24L * 60L * 60L * 1000L;
     private static final String UTC = "UTC";
-    private static final String SOURCE_URL = "https://thonly.cc";
     /** CalendarContract.Events 的目录 MIME type，ACTION_INSERT 需要它才能匹配到日历应用 */
     private static final String CALENDAR_DIR_TYPE = "vnd.android.cursor.dir/event";
 
@@ -117,7 +117,7 @@ public final class CalendarInserter {
         if (!event.qqGroup().isEmpty()) {
             description.append("QQ 群：").append(event.qqGroup()).append('\n');
         }
-        description.append("来源：").append(SOURCE_URL);
+        description.append("来源：").append(ServerConfig.baseUrl());
         return description.toString();
     }
 }
