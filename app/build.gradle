@@ -20,7 +20,7 @@ android {
         targetSdk 34
         versionCode 11
         versionName '1.5.4'
-        resConfigs 'zh', 'en'
+        resConfigs 'zh', 'zh-rHK', 'zh-rTW', 'en', 'ja'
     }
 
     if (keystorePropertiesFile.exists()) {
