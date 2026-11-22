@@ -266,7 +266,7 @@
     <string name="tool_itinerary_desc">關注的活動排成時間線，帶倒計時</string>
     <string name="itinerary_empty">還沒有關注的活動\n在速查表點 ★ 就能加進行程</string>
     <string name="itinerary_no_upcoming">暫無即將開始</string>
-    <string name="itinerary_no_upcoming_hint">關注的活動都已經結束了，去速查表看看新的</string>
+    <string name="itinerary_no_upcoming_hint">前往速查表查看近期活動</string>
     <string name="itinerary_today">就是今天</string>
     <string name="itinerary_days_left">還有 %1$d 天</string>
     <string name="itinerary_meta">%1$s · %2$s</string>
@@ -310,4 +310,17 @@
     <string name="auth_quiz_answer_required">請先回答註冊驗證問題</string>
     <string name="auth_quiz_refresh">刷新驗證 / 重試</string>
     <string name="auth_quiz_load_error">無法獲取註冊驗證。請檢查網絡或確認服務器開放註冊，然後點擊重試。</string>
+    <string name="itinerary_open_list">瀏覽速查表</string>
+    <string name="itinerary_missing_snapshot">部分關注尚未儲存活動詳情。連線後點重新整理。</string>
+    <string name="itinerary_sync_loading">正在同步關注活動…</string>
+    <string name="itinerary_sync_failed">暫時無法同步，正在顯示已儲存的行程</string>
+    <string name="itinerary_sync_failed_at">未能同步所有活動 · 上次完整同步 %1$s</string>
+    <string name="itinerary_sync_at">上次完整同步 %1$s</string>
+    <string name="itinerary_date_pending">日期待定</string>
+    <string name="itinerary_month_day">%1$d月%2$d日</string>
+    <string name="itinerary_date_changed">日期變更 %1$s → %2$s</string>
+    <string name="itinerary_cancelled">已取消</string>
+    <string name="itinerary_postponed">已延期</string>
+    <string name="itinerary_unavailable">暫不可用</string>
+    <string name="itinerary_ended">已結束</string>
 </resources>

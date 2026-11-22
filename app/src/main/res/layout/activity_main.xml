@@ -155,6 +155,11 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/navItinerary"
+                    style="@style/NavItem"
+                    android:text="@string/tool_itinerary_title" />
+
                 <LinearLayout
                     android:id="@+id/navBuiltIn"
                     android:layout_width="match_parent"

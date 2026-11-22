@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 
 import cc.thonly.app.util.AppLog;
 
@@ -30,6 +33,7 @@ public final class Favorites {
 
     private static final String PREFS_NAME = "favorites";
     private static final String KEY_ITEMS = "items";
+    private static final String KEY_LAST_SYNC = "last_full_sync";
     /** 早期版本只存了 id，没有快照，读出来仍让 ★ 亮着 */
     private static final String KEY_LEGACY_IDS = "ids";
 
@@ -40,12 +44,15 @@ public final class Favorites {
 
     public Favorites(Context context) {
         this.context = context.getApplicationContext();
-        this.preferences = this.context
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String server = ServerConfig.baseUrl();
+        String scope = ServerConfig.DEFAULT_BASE_URL.equals(server) ? PREFS_NAME
+                : PREFS_NAME + "-" + UUID.nameUUIDFromBytes(server.getBytes(StandardCharsets.UTF_8));
+        this.preferences = this.context.getSharedPreferences(scope, Context.MODE_PRIVATE);
         loadItems();
         Set<String> stored = preferences.getStringSet(KEY_LEGACY_IDS, null);
         if (stored != null) {
             legacyIds.addAll(stored);
+            legacyIds.removeAll(items.keySet());
         }
     }
 
@@ -71,10 +78,19 @@ public final class Favorites {
                         json.optString("name", ""),
                         json.optString("region", ""),
                         json.optString("date", ""),
-                        json.optBoolean("cancelled", false)));
+                        readStatus(json), json.optBoolean("unavailable", false),
+                        json.isNull("previousDate") ? null : json.optString("previousDate", "")));
             }
         } catch (Exception e) {
             AppLog.e("favorites", "读取关注列表失败", e);
+        }
+    }
+
+    private static EventStatus readStatus(JSONObject json) {
+        try {
+            return EventStatus.valueOf(json.optString("status"));
+        } catch (IllegalArgumentException ignored) {
+            return json.optBoolean("cancelled", false) ? EventStatus.CANCELLED : EventStatus.UNKNOWN;
         }
     }
 
@@ -87,13 +103,17 @@ public final class Favorites {
                 json.put("name", event.name());
                 json.put("region", event.region());
                 json.put("date", event.rawDate());
-                json.put("cancelled", event.isCancelled());
+                json.put("cancelled", event.status().isCancelled());
+                json.put("status", event.status().name());
+                json.put("unavailable", event.isUnavailable());
+                json.put("previousDate", event.previousDate());
                 root.put(entry.getKey(), json);
             }
         } catch (Exception e) {
             AppLog.e("favorites", "保存关注列表失败", e);
         }
-        preferences.edit().putString(KEY_ITEMS, root.toString()).apply();
+        preferences.edit().putString(KEY_ITEMS, root.toString())
+                .putStringSet(KEY_LEGACY_IDS, new HashSet<String>(legacyIds)).apply();
     }
 
     public boolean isFavorite(int year, int id) {
@@ -105,40 +125,97 @@ public final class Favorites {
     public boolean toggle(int year, Event event) {
         String key = key(year, event.id());
         boolean nowFavorite;
-        if (items.containsKey(key)) {
+        if (isFavorite(year, event.id())) {
             items.remove(key);
             nowFavorite = false;
         } else {
-            items.put(key, snapshotOf(year, event));
+            items.put(key, snapshotOf(year, event, eventDate(event)));
             nowFavorite = true;
         }
         legacyIds.remove(key);
-        // getStringSet 返回的集合不能直接改，写回时给个副本
-        preferences.edit().putStringSet(KEY_LEGACY_IDS, new HashSet<String>(legacyIds)).apply();
         saveItems();
         // 收藏变了就重排提醒：新收藏要排，取消收藏要把闹钟撤掉
         cc.thonly.app.notify.ReminderScheduler.reschedule(context);
         return nowFavorite;
     }
 
-    private static FavoriteEvent snapshotOf(int year, Event event) {
-        String date = "";
+    private static String eventDate(Event event) {
         if (event.date().isResolved()) {
-            date = String.format(java.util.Locale.US, "%04d-%02d-%02d",
+            return String.format(java.util.Locale.US, "%04d-%02d-%02d",
                     event.date().year(), event.date().month(), event.date().day());
         }
-        return new FavoriteEvent(year, event.id(), event.name(), event.region(), date,
-                event.status().isCancelled());
+        return "";
     }
 
-    /** 旧版本只存了 id 的关注，补一份快照，好让「我的行程」能显示 */
-    public void backfill(int year, Event event) {
-        String key = key(year, event.id());
-        if (items.containsKey(key) || !legacyIds.contains(key)) {
-            return;
+    private static FavoriteEvent snapshotOf(int year, Event event, String date) {
+        return new FavoriteEvent(year, event.id(), event.name(), event.region(), date,
+                event.status(), false, null);
+    }
+
+    /** 缓存只用于补齐早期的 ID 收藏，只有网络返回的完整年度列表可以更新已有快照。 */
+    public boolean reconcile(EventData data, boolean fresh) {
+        int year = data.year();
+        boolean changed = false;
+        Set<String> seen = new HashSet<String>();
+        for (Event event : data.events()) {
+            String key = key(year, event.id());
+            FavoriteEvent old = items.get(key);
+            if (old == null) {
+                if (!legacyIds.remove(key)) {
+                    continue;
+                }
+                items.put(key, snapshotOf(year, event, eventDate(event)));
+                changed = true;
+            } else if (fresh) {
+                FavoriteEvent updated = old.updated(event.name(), event.region(), eventDate(event), event.status());
+                if (old != updated) {
+                    items.put(key, updated);
+                    changed = true;
+                }
+            }
+            if (fresh) {
+                seen.add(key);
+            }
         }
-        items.put(key, snapshotOf(year, event));
-        saveItems();
+        if (fresh) {
+            for (Map.Entry<String, FavoriteEvent> entry : items.entrySet()) {
+                FavoriteEvent old = entry.getValue();
+                if (old.year() == year && !seen.contains(entry.getKey()) && !old.isUnavailable()) {
+                    entry.setValue(old.markUnavailable());
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            saveItems();
+        }
+        return changed;
+    }
+
+    public FavoriteEvent find(int year, int id) {
+        return items.get(key(year, id));
+    }
+
+    public Set<Integer> years() {
+        Set<Integer> years = new TreeSet<Integer>();
+        for (FavoriteEvent event : items.values()) {
+            years.add(event.year());
+        }
+        for (String key : legacyIds) {
+            int[] parsed = parseKey(key);
+            if (parsed != null) {
+                years.add(parsed[0]);
+            }
+        }
+        return years;
+    }
+
+    public long lastFullSyncAt() {
+        return preferences.getLong(KEY_LAST_SYNC, 0);
+    }
+
+    public void recordFullSync(long timestamp) {
+        preferences.edit().putLong(KEY_LAST_SYNC, timestamp).apply();
     }
 
     /** 按日期升序，日期未定的排最后 */

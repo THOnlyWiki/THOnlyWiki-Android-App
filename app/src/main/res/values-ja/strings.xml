@@ -266,7 +266,7 @@
     <string name="tool_itinerary_desc">お気に入りのイベントを時系列で表示し、開催までの日数を確認</string>
     <string name="itinerary_empty">お気に入りのイベントはありません\nイベント一覧の ★ で追加できます</string>
     <string name="itinerary_no_upcoming">今後のイベントはありません</string>
-    <string name="itinerary_no_upcoming_hint">お気に入りはすべて終了しました。イベント一覧から新しい予定を探せます</string>
+    <string name="itinerary_no_upcoming_hint">イベント一覧から近日開催の予定を探せます</string>
     <string name="itinerary_today">本日開催</string>
     <string name="itinerary_days_left">あと%1$d日</string>
     <string name="itinerary_meta">%1$s · %2$s</string>
@@ -310,4 +310,17 @@
     <string name="auth_quiz_answer_required">登録の確認問題に回答してください</string>
     <string name="auth_quiz_refresh">確認問題を再読み込み</string>
     <string name="auth_quiz_load_error">確認問題を取得できませんでした。接続状況とサーバーのアカウント作成設定を確認し、再度お試しください。</string>
+    <string name="itinerary_open_list">イベント一覧を開く</string>
+    <string name="itinerary_missing_snapshot">詳細が未保存のイベントがあります。接続後に更新してください。</string>
+    <string name="itinerary_sync_loading">フォロー中のイベントを同期しています…</string>
+    <string name="itinerary_sync_failed">同期できません。保存済みの予定を表示しています</string>
+    <string name="itinerary_sync_failed_at">一部のイベントを同期できません · 前回の完全同期 %1$s</string>
+    <string name="itinerary_sync_at">前回の完全同期 %1$s</string>
+    <string name="itinerary_date_pending">日程未定</string>
+    <string name="itinerary_month_day">%1$d月%2$d日</string>
+    <string name="itinerary_date_changed">日程変更 %1$s → %2$s</string>
+    <string name="itinerary_cancelled">中止</string>
+    <string name="itinerary_postponed">延期</string>
+    <string name="itinerary_unavailable">掲載情報なし</string>
+    <string name="itinerary_ended">終了</string>
 </resources>

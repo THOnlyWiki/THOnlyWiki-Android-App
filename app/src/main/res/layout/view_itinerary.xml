@@ -40,6 +40,25 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/itinerarySync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/itineraryOpenList"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/itinerary_open_list"
+            android:textAllCaps="false" />
     </LinearLayout>
 
     <View

@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.FavoriteEvent;
+import cc.thonly.app.data.Favorites;
+import cc.thonly.app.data.ServerConfig;
 
 /**
  * 闹钟到点 → 发通知。
@@ -16,38 +19,29 @@ public final class ReminderReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null) {
+        if (intent == null || !ServerConfig.baseUrl().equals(intent.getStringExtra("server"))) {
             return;
         }
-        int eventId = intent.getIntExtra("eventId", 0);
-        String name = intent.getStringExtra("name");
-        String region = intent.getStringExtra("region");
-        String dateText = intent.getStringExtra("dateText");
+        FavoriteEvent favorite = new Favorites(context).find(
+                intent.getIntExtra("year", 0), intent.getIntExtra("eventId", 0));
         int slot = intent.getIntExtra("slot", ReminderScheduler.SLOT_MORNING);
-        if (eventId == 0 || name == null) {
+        // 广播可能在改期或取消前已经排入系统队列，发通知前核对最新快照。
+        if (favorite == null || !favorite.canRemind()
+                || !favorite.rawDate().equals(intent.getStringExtra("date"))) {
             return;
         }
 
         boolean evening = slot == ReminderScheduler.SLOT_EVENING;
         String title = context.getString(evening ? R.string.reminder_title_evening
-                : R.string.reminder_title_today, name);
+                : R.string.reminder_title_today, favorite.name());
 
         StringBuilder body = new StringBuilder();
-        if (dateText != null && !dateText.isEmpty()) {
-            body.append(dateText);
-        }
-        if (region != null && !region.isEmpty()) {
-            if (body.length() > 0) {
-                body.append(" · ");
-            }
-            body.append(region);
-        }
-        if (body.length() == 0) {
-            body.append(context.getString(R.string.reminder_body_fallback));
+        body.append(favorite.dateText());
+        if (!favorite.region().isEmpty()) {
+            body.append(" · ").append(favorite.region());
         }
 
-        // 通知 ID 带上时段，前一天和当天两条各自独立，不会互相覆盖
-        Notifications.show(context, eventId * 10 + slot, title, body.toString());
+        Notifications.show(context, ReminderScheduler.key(favorite, slot), slot, title, body.toString());
         ReminderScheduler.reschedule(context);
     }
 }

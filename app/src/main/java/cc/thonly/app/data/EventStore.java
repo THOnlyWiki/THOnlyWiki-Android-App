@@ -5,6 +5,7 @@ import android.os.Looper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +25,10 @@ public final class EventStore {
         void onLoadFailed(int year, EventApiException error);
     }
 
+    public interface SyncListener {
+        void onComplete(List<LoadResult> results, boolean allFresh);
+    }
+
     private final EventRepository repository;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -35,6 +40,9 @@ public final class EventStore {
     private boolean loading;
     private int loadingYear;
     private int lastRequestedYear;
+    private int loadGeneration;
+    private boolean syncingItinerary;
+    private boolean closed;
 
     public EventStore(EventRepository repository) {
         this.repository = repository;
@@ -69,12 +77,13 @@ public final class EventStore {
     }
 
     public void load(final int year, final boolean forceRefresh) {
-        if (loading && loadingYear == year && !forceRefresh) {
+        if (closed || (loading && loadingYear == year && !forceRefresh)) {
             return;
         }
         loading = true;
         loadingYear = year;
         lastRequestedYear = year;
+        final int generation = ++loadGeneration;
         notifyLoadingStarted(year);
 
         executor.execute(new Runnable() {
@@ -85,19 +94,20 @@ public final class EventStore {
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            loading = false;
-                            current = result.data();
-                            fromCache = result.fromCache();
-                            updatedAtMillis = result.updatedAtMillis();
-                            for (Listener listener : snapshot()) {
-                                listener.onDataLoaded(current);
+                            if (closed || generation != loadGeneration) {
+                                return;
                             }
+                            loading = false;
+                            publish(result);
                         }
                     });
                 } catch (final EventApiException e) {
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
+                            if (closed || generation != loadGeneration) {
+                                return;
+                            }
                             loading = false;
                             for (Listener listener : snapshot()) {
                                 listener.onLoadFailed(year, e);
@@ -109,6 +119,55 @@ public final class EventStore {
         });
     }
 
+    /** 单次前台同步关注的年份，不改变速查表或者日历当前选中的年份。 */
+    public boolean syncItinerary(Set<Integer> years, SyncListener listener) {
+        if (closed || syncingItinerary || years.isEmpty()) {
+            return false;
+        }
+        syncingItinerary = true;
+        executor.execute(() -> {
+            List<LoadResult> results = new ArrayList<LoadResult>();
+            boolean allFresh = true;
+            for (int year : years) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                try {
+                    LoadResult result = repository.load(year, true);
+                    results.add(result);
+                    allFresh &= !result.fromCache();
+                } catch (EventApiException error) {
+                    allFresh = false;
+                }
+            }
+            boolean complete = allFresh;
+            mainHandler.post(() -> {
+                if (closed) {
+                    return;
+                }
+                syncingItinerary = false;
+                listener.onComplete(results, complete);
+                if (!loading) {
+                    for (LoadResult result : results) {
+                        if (!result.fromCache() && result.data().year() == lastRequestedYear) {
+                            publish(result);
+                        }
+                    }
+                }
+            });
+        });
+        return true;
+    }
+
+    private void publish(LoadResult result) {
+        current = result.data();
+        fromCache = result.fromCache();
+        updatedAtMillis = result.updatedAtMillis();
+        for (Listener listener : snapshot()) {
+            listener.onDataLoaded(current);
+        }
+    }
+
     /** 重新拉取最近一次请求的年份，用于「刷新」按钮 */
     public void reload() {
         if (lastRequestedYear > 0) {
@@ -117,7 +176,9 @@ public final class EventStore {
     }
 
     public void shutdown() {
+        closed = true;
         listeners.clear();
+        mainHandler.removeCallbacksAndMessages(null);
         executor.shutdownNow();
     }
 

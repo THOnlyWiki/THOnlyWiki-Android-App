@@ -8,41 +8,53 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import cc.thonly.app.R;
+import cc.thonly.app.data.EventDate;
+import cc.thonly.app.data.EventStatus;
 import cc.thonly.app.data.FavoriteEvent;
 import cc.thonly.app.data.Favorites;
 
 /**
  * 我的行程：顶部是最近一场的大倒计时，下面是关注的全部活动。
  *
- * <p>数据来自关注快照，不联网、也不受当前选中年份影响。
+ * <p>先显示本机关注快照，前台同步完成后由入口更新，独立于当前选中的速查表年份。
  * 同一天有两场以上会标出来——学生一般只能去一场，这点很实际。
  */
 public final class ItineraryController {
 
     private final Activity activity;
+    private final Favorites favorites;
     private final TextView daysView;
     private final TextView nameView;
     private final TextView metaView;
     private final TextView emptyView;
+    private final TextView syncView;
     private final ListView listView;
     private final ItineraryAdapter adapter;
 
     private final List<FavoriteEvent> items = new ArrayList<FavoriteEvent>();
     private final Map<String, Integer> sameDayCount = new HashMap<String, Integer>();
+    private boolean syncing;
+    private boolean syncFailed;
 
-    public ItineraryController(Activity activity, View root) {
+    public ItineraryController(Activity activity, View root, Favorites favorites, Runnable openList) {
         this.activity = activity;
+        this.favorites = favorites;
         this.daysView = root.findViewById(R.id.itineraryDays);
         this.nameView = root.findViewById(R.id.itineraryName);
         this.metaView = root.findViewById(R.id.itineraryMeta);
         this.emptyView = root.findViewById(R.id.itineraryEmpty);
+        this.syncView = root.findViewById(R.id.itinerarySync);
         this.listView = root.findViewById(R.id.itineraryList);
+        root.findViewById(R.id.itineraryOpenList).setOnClickListener(view -> openList.run());
 
         this.adapter = new ItineraryAdapter();
         listView.setAdapter(adapter);
@@ -50,30 +62,57 @@ public final class ItineraryController {
         reload();
     }
 
-    /** 每次进入页面都重读，关注可能在别的页面改过 */
+    /** 从共享的关注快照重绘，切换页面与离线时都可立即调用。 */
     public void reload() {
-        Favorites favorites = new Favorites(activity);
         items.clear();
         items.addAll(favorites.list());
 
         sameDayCount.clear();
         for (FavoriteEvent event : items) {
             String key = event.rawDate();
-            if (!key.isEmpty()) {
+            if (event.canRemind()) {
                 Integer count = sameDayCount.get(key);
                 sameDayCount.put(key, count == null ? 1 : count + 1);
             }
         }
 
         adapter.notifyDataSetChanged();
+        emptyView.setText(favorites.count() > 0
+                ? R.string.itinerary_missing_snapshot : R.string.itinerary_empty);
         emptyView.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
         renderHeader();
+        renderSyncState();
+    }
+
+    public void showSyncState(boolean syncing, boolean failed) {
+        this.syncing = syncing;
+        this.syncFailed = failed;
+        renderSyncState();
+    }
+
+    private void renderSyncState() {
+        long timestamp = favorites.lastFullSyncAt();
+        if (favorites.count() == 0 || (!syncing && !syncFailed && timestamp == 0)) {
+            syncView.setVisibility(View.GONE);
+            return;
+        }
+        syncView.setVisibility(View.VISIBLE);
+        if (syncing) {
+            syncView.setText(R.string.itinerary_sync_loading);
+        } else if (timestamp == 0) {
+            syncView.setText(R.string.itinerary_sync_failed);
+        } else {
+            String time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                    .format(new Date(timestamp));
+            syncView.setText(activity.getString(syncFailed
+                    ? R.string.itinerary_sync_failed_at : R.string.itinerary_sync_at, time));
+        }
     }
 
     private void renderHeader() {
         FavoriteEvent next = null;
         for (FavoriteEvent event : items) {
-            if (event.isUpcoming() && !event.isCancelled()) {
+            if (event.isUpcoming()) {
                 next = event;
                 break;
             }
@@ -90,8 +129,39 @@ public final class ItineraryController {
                 : activity.getString(R.string.itinerary_days_left, days));
         nameView.setText(next.name());
         metaView.setText(activity.getString(R.string.itinerary_meta,
-                next.dateText(), next.region()));
+                formatDate(next.rawDate(), false), next.region()));
         metaView.setVisibility(View.VISIBLE);
+    }
+
+    private String formatDate(String rawDate, boolean includeYear) {
+        Calendar date = EventDate.parse(rawDate).toCalendar();
+        if (date == null) {
+            return activity.getString(R.string.itinerary_date_pending);
+        }
+        return includeYear ? DateFormat.getDateInstance(DateFormat.MEDIUM).format(date.getTime())
+                : activity.getString(R.string.itinerary_month_day,
+                        date.get(Calendar.MONTH) + 1, date.get(Calendar.DAY_OF_MONTH));
+    }
+
+    private String remaining(FavoriteEvent event) {
+        if (event.isUnavailable()) {
+            return activity.getString(R.string.itinerary_unavailable);
+        }
+        if (event.status().isCancelled()) {
+            return activity.getString(R.string.itinerary_cancelled);
+        }
+        if (event.status() == EventStatus.POSTPONED) {
+            return activity.getString(R.string.itinerary_postponed);
+        }
+        long days = event.daysUntil();
+        if (days == Long.MIN_VALUE) {
+            return activity.getString(R.string.itinerary_date_pending);
+        }
+        if (days == 0) {
+            return activity.getString(R.string.itinerary_today);
+        }
+        return days > 0 ? activity.getString(R.string.itinerary_days_left, days)
+                : activity.getString(R.string.itinerary_ended);
     }
 
     private final class ItineraryAdapter extends BaseAdapter {
@@ -120,21 +190,28 @@ public final class ItineraryController {
             }
             FavoriteEvent event = items.get(position);
 
-            ((TextView) view.findViewById(R.id.itemDate)).setText(event.dateText());
+            ((TextView) view.findViewById(R.id.itemDate)).setText(formatDate(event.rawDate(), false));
 
             TextView nameView = view.findViewById(R.id.itemName);
             nameView.setText(event.name());
-            nameView.setTextColor(activity.getColor(event.isCancelled()
+            nameView.setTextColor(activity.getColor((event.status().isCancelled() || event.isUnavailable())
                     ? R.color.text_tertiary : R.color.text_primary));
 
             // 地区 + 同日冲突提示
             StringBuilder meta = new StringBuilder(event.region());
             Integer sameDay = sameDayCount.get(event.rawDate());
-            if (sameDay != null && sameDay > 1) {
+            if (event.canRemind() && sameDay != null && sameDay > 1) {
                 if (meta.length() > 0) {
                     meta.append(" · ");
                 }
                 meta.append(activity.getString(R.string.itinerary_same_day, sameDay));
+            }
+            if (event.previousDate() != null) {
+                if (meta.length() > 0) {
+                    meta.append('\n');
+                }
+                meta.append(activity.getString(R.string.itinerary_date_changed,
+                        formatDate(event.previousDate(), true), formatDate(event.rawDate(), true)));
             }
             TextView metaView = view.findViewById(R.id.itemMeta);
             if (meta.length() == 0) {
@@ -145,9 +222,9 @@ public final class ItineraryController {
             }
 
             TextView remainView = view.findViewById(R.id.itemRemain);
-            remainView.setText(event.remainingText());
+            remainView.setText(remaining(event));
             remainView.setTextColor(activity.getColor(
-                    event.isUpcoming() && !event.isCancelled()
+                    event.isUpcoming()
                             ? R.color.accent : R.color.text_tertiary));
             return view;
         }

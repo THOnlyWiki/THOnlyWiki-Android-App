@@ -161,12 +161,6 @@ public final class ListController implements EventStore.Listener {
 
     @Override
     public void onDataLoaded(EventData data) {
-        // 老版本只存了 id 的关注，这里补上快照，「我的行程」才有内容
-        if (favorites != null) {
-            for (Event event : data.events()) {
-                favorites.backfill(data.year(), event);
-            }
-        }
         renderYearSpinner();
         applyFilter();
         if (pendingScrollToToday) {
@@ -374,7 +368,7 @@ public final class ListController implements EventStore.Listener {
     private void updateCountdown() {
         if (favorites != null) {
             for (FavoriteEvent favorite : favorites.list()) {
-                if (favorite.isUpcoming() && !favorite.isCancelled()) {
+                if (favorite.isUpcoming()) {
                     showCountdown(favorite.name(), favorite.daysUntil());
                     return;
                 }
@@ -388,7 +382,8 @@ public final class ListController implements EventStore.Listener {
         Event nearest = null;
         long nearestDays = Long.MAX_VALUE;
         for (Event event : current.events()) {
-            if (!event.date().isResolved() || event.status().isCancelled()) {
+            if (!event.date().isResolved() || event.status().isCancelled()
+                    || event.status() == cc.thonly.app.data.EventStatus.POSTPONED) {
                 continue;
             }
             long days = daysUntil(event.date());
@@ -471,6 +466,11 @@ public final class ListController implements EventStore.Listener {
                 applyFilter();
             }
         });
+    }
+
+    void onFavoritesSynchronized() {
+        updateFavoriteToggle();
+        updateCountdown();
     }
 
     /** 当前选中的年份（组队页要知道队伍挂在哪个年份下） */

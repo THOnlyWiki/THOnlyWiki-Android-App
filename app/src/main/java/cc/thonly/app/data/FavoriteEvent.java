@@ -11,16 +11,21 @@ public final class FavoriteEvent {
     private final String region;
     /** yyyy-MM-dd，空串表示日期未定 */
     private final String date;
-    private final boolean cancelled;
+    private final EventStatus status;
+    private final boolean unavailable;
+    /** null 表示尚未观察到日期变化，空串表示原先未定档。 */
+    private final String previousDate;
 
     public FavoriteEvent(int year, int id, String name, String region, String date,
-                         boolean cancelled) {
+                         EventStatus status, boolean unavailable, String previousDate) {
         this.year = year;
         this.id = id;
         this.name = name;
         this.region = region;
         this.date = date == null ? "" : date;
-        this.cancelled = cancelled;
+        this.status = status;
+        this.unavailable = unavailable;
+        this.previousDate = previousDate;
     }
 
     public int year() {
@@ -39,8 +44,35 @@ public final class FavoriteEvent {
         return region;
     }
 
-    public boolean isCancelled() {
-        return cancelled;
+    public EventStatus status() {
+        return status;
+    }
+
+    public boolean isUnavailable() {
+        return unavailable;
+    }
+
+    public String previousDate() {
+        return previousDate;
+    }
+
+    public boolean canRemind() {
+        return !unavailable && !status.isCancelled() && status != EventStatus.POSTPONED
+                && calendar() != null;
+    }
+
+    FavoriteEvent updated(String newName, String newRegion, String newDate, EventStatus newStatus) {
+        if (!unavailable && date.equals(newDate) && status == newStatus
+                && name.equals(newName) && region.equals(newRegion)) {
+            return this;
+        }
+        return new FavoriteEvent(year, id, newName, newRegion, newDate, newStatus, false,
+                date.equals(newDate) ? previousDate : date);
+    }
+
+    FavoriteEvent markUnavailable() {
+        return unavailable ? this
+                : new FavoriteEvent(year, id, name, region, date, status, true, previousDate);
     }
 
     /** 原始日期 yyyy-MM-dd，未定档为空串 */
@@ -73,23 +105,7 @@ public final class FavoriteEvent {
 
     /** 还没开始的（含今天） */
     public boolean isUpcoming() {
-        long days = daysUntil();
-        return days != Long.MIN_VALUE && days >= 0;
-    }
-
-    /** 「还有 3 天」「今天」「已结束」 */
-    public String remainingText() {
-        long days = daysUntil();
-        if (days == Long.MIN_VALUE) {
-            return "日期待定";
-        }
-        if (days > 0) {
-            return "还有 " + days + " 天";
-        }
-        if (days == 0) {
-            return "今天";
-        }
-        return "已结束";
+        return canRemind() && daysUntil() >= 0;
     }
 
     /**

@@ -62,11 +62,11 @@ public final class Notifications {
     /**
      * 发一条提醒。
      *
-     * @param id    通知 ID（同一个 ID 会覆盖，这里用事件 ID 保证一场活动一条）
+     * @param tag   年份、活动 ID 和时段组成的通知标识
      * @param title 标题
      * @param text  正文
      */
-    public static void show(Context context, int id, String title, String text) {
+    public static void show(Context context, String tag, int id, String title, String text) {
         if (!canPost(context)) {
             return;
         }
@@ -84,7 +84,7 @@ public final class Notifications {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
-            manager.notify(id, builder.build());
+            manager.notify(tag, id, builder.build());
         }
     }
 

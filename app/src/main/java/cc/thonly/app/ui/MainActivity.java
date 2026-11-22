@@ -34,6 +34,7 @@ import cc.thonly.app.data.EventApiException;
 import cc.thonly.app.data.EventData;
 import cc.thonly.app.data.EventStore;
 import cc.thonly.app.data.Favorites;
+import cc.thonly.app.data.LoadResult;
 import cc.thonly.app.data.RemoteEventRepository;
 import cc.thonly.app.data.SettingsStore;
 import cc.thonly.app.data.SidebarRepository;
@@ -86,6 +87,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private static final long STALE_HINT_MS = 60L * 60L * 1000L;
 
     private EventStore store;
+    private Favorites favorites;
     private EventActions actions;
     private SettingsStore settings;
     private UserSession session;
@@ -128,7 +130,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     private final List<TextView> dynamicRows = new ArrayList<TextView>();
     private final List<Integer> dynamicPages = new ArrayList<Integer>();
 
-    private int currentPage = PAGE_LIST;
+    private int currentPage = PAGE_ITINERARY;
     private boolean drawerOpen;
     private int drawerWidth;
 
@@ -197,7 +199,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 onSessionChanged();
             }
         });
-        listController.setFavorites(new Favorites(this));
+        favorites = new Favorites(this);
+        listController.setFavorites(favorites);
         calendarController = new CalendarController(this, calendarPage, store, actions);
         webController = new WebController(this, webPage);
         loginController = new LoginController(this, loginPage, session, this);
@@ -237,7 +240,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         });
         musicController = new MusicController(this, musicPage);
         glossaryController = new GlossaryController(this, glossaryPage);
-        itineraryController = new ItineraryController(this, itineraryPage);
+        itineraryController = new ItineraryController(this, itineraryPage, favorites,
+                () -> selectPage(PAGE_LIST));
         teamController = new TeamController(this, teamPage);
         chatController = new ChatController(this, chatPage, new Runnable() {
             @Override
@@ -265,9 +269,9 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 selectPage(PAGE_ITINERARY);
             }
         });
+        store.addListener(this);
         store.addListener(listController);
         store.addListener(calendarController);
-        store.addListener(this);
 
         offlineBanner = findViewById(R.id.offlineBanner);
         offlineBanner.setOnClickListener(new View.OnClickListener() {
@@ -280,9 +284,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         bindHeader();
         bindDrawer();
 
-        selectPage(PAGE_LIST);
+        selectPage(PAGE_ITINERARY);
         listController.setLoggedIn(session.isLoggedIn());
-        store.load(currentYear(), false);
         checkUpdateOnStart();
         loadRemoteSidebar();
         openFromIntent(getIntent());
@@ -352,6 +355,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 // 在主站页时刷新网页，其它页刷新活动数据
                 if (currentPage == PAGE_WEB) {
                     webController.reload();
+                } else if (currentPage == PAGE_ITINERARY) {
+                    refreshItinerary();
                 } else {
                     store.reload();
                 }
@@ -375,6 +380,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             }
         });
 
+        bindNavRow(R.id.navItinerary, PAGE_ITINERARY);
         bindNavRow(R.id.navList, PAGE_LIST);
         bindNavRow(R.id.navCalendar, PAGE_CALENDAR);
         bindNavRow(R.id.navToolbox, PAGE_TOOLBOX);
@@ -749,6 +755,12 @@ public final class MainActivity extends Activity implements EventStore.Listener,
             pages[i].setVisibility(i == page ? View.VISIBLE : View.GONE);
         }
         updateNavHighlight();
+        ((TextView) findViewById(R.id.headerTitle)).setText(
+                page == PAGE_ITINERARY ? R.string.tool_itinerary_title : R.string.app_name);
+        if ((page == PAGE_LIST || page == PAGE_CALENDAR) && store.current().year() == 0
+                && !store.isLoading()) {
+            store.load(currentYear(), false);
+        }
 
         if (page == PAGE_CALENDAR) {
             calendarController.onShown();
@@ -780,8 +792,8 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         }
         // 聊天页自带顶栏，全局工具栏再占一条就重复了
         appToolbar.setVisibility(page == PAGE_CHAT ? View.GONE : View.VISIBLE);
+        updateStaleBanner();
         if (page == PAGE_ITINERARY) {
-            // 关注可能在别的页面改过，每次进来都重读
             itineraryController.reload();
         }
     }
@@ -865,6 +877,10 @@ public final class MainActivity extends Activity implements EventStore.Listener,
 
     @Override
     public void onDataLoaded(EventData data) {
+        if (favorites.reconcile(data, !store.isFromCache())) {
+            cc.thonly.app.notify.ReminderScheduler.reschedule(this);
+            itineraryController.reload();
+        }
         updateStaleBanner();
     }
 
@@ -879,7 +895,7 @@ public final class MainActivity extends Activity implements EventStore.Listener,
         boolean stale = store.isFromCache()
                 && updatedAt > 0
                 && System.currentTimeMillis() - updatedAt > STALE_HINT_MS;
-        if (!stale) {
+        if (!stale || currentPage == PAGE_ITINERARY) {
             offlineBanner.setVisibility(View.GONE);
             return;
         }
@@ -887,6 +903,28 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 .format(new Date(updatedAt));
         offlineBanner.setText(getString(R.string.offline_banner, time));
         offlineBanner.setVisibility(View.VISIBLE);
+    }
+
+    private void refreshItinerary() {
+        java.util.Set<Integer> years = favorites.years();
+        if (store.syncItinerary(years, (results, allFresh) -> {
+            boolean changed = false;
+            for (LoadResult result : results) {
+                changed |= favorites.reconcile(result.data(), !result.fromCache());
+            }
+            boolean complete = allFresh && years.containsAll(favorites.years());
+            if (complete) {
+                favorites.recordFullSync(System.currentTimeMillis());
+            }
+            if (changed) {
+                cc.thonly.app.notify.ReminderScheduler.reschedule(this);
+                listController.onFavoritesSynchronized();
+            }
+            itineraryController.reload();
+            itineraryController.showSyncState(false, !complete);
+        })) {
+            itineraryController.showSyncState(true, false);
+        }
     }
 
     private int dp(int value) {
@@ -933,13 +971,12 @@ public final class MainActivity extends Activity implements EventStore.Listener,
                 return true;
             }
             // 百宝箱里的功能页先退回百宝箱，而不是一路跳回列表
-            if (currentPage == PAGE_MUSIC || currentPage == PAGE_GLOSSARY
-                    || currentPage == PAGE_ITINERARY) {
+            if (currentPage == PAGE_MUSIC || currentPage == PAGE_GLOSSARY) {
                 selectPage(PAGE_TOOLBOX);
                 return true;
             }
-            if (currentPage != PAGE_LIST) {
-                selectPage(PAGE_LIST);
+            if (currentPage != PAGE_ITINERARY) {
+                selectPage(PAGE_ITINERARY);
                 return true;
             }
         }
@@ -950,6 +987,12 @@ public final class MainActivity extends Activity implements EventStore.Listener,
     protected void onPause() {
         webController.onPause();
         super.onPause();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        refreshItinerary();
     }
 
     @Override

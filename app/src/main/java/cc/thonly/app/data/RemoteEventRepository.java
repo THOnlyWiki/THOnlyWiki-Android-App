@@ -36,6 +36,7 @@ public final class RemoteEventRepository implements EventRepository {
     private static final long CACHE_TTL_MS = 6L * 60L * 60L * 1000L;
 
     private final FileCache cache;
+    private final String activityApi = ServerConfig.activityApi();
 
     public RemoteEventRepository(FileCache cache) {
         this.cache = cache;
@@ -55,9 +56,12 @@ public final class RemoteEventRepository implements EventRepository {
         }
 
         try {
-            String body = HttpClient.getText(ServerConfig.activityApi() + "/list?year=" + year);
-            cache.write(cacheKey, body);
-            return new LoadResult(parse(year, body), false, System.currentTimeMillis());
+            String body = HttpClient.getText(activityApi + "/list?year=" + year);
+            EventData data = parse(year, body);
+            if (activityApi.equals(ServerConfig.activityApi())) {
+                cache.write(cacheKey, body);
+            }
+            return new LoadResult(data, false, System.currentTimeMillis());
         } catch (IOException networkError) {
             // 网络不通：只要本地有存档就继续用，哪怕已经过期
             if (cached != null) {
@@ -72,6 +76,10 @@ public final class RemoteEventRepository implements EventRepository {
     private EventData parse(int requestedYear, String body) throws EventApiException {
         try {
             JSONObject root = new JSONObject(body);
+            int responseYear = root.optInt("year", requestedYear);
+            if (responseYear != requestedYear) {
+                throw new JSONException("Unexpected activity year");
+            }
 
             List<Integer> years = new ArrayList<Integer>();
             JSONArray yearArray = root.optJSONArray("years");
@@ -85,17 +93,16 @@ public final class RemoteEventRepository implements EventRepository {
             }
 
             List<Event> events = new ArrayList<Event>();
-            JSONArray rows = root.optJSONArray("rows");
-            if (rows != null) {
-                for (int i = 0; i < rows.length(); i++) {
-                    JSONObject row = rows.optJSONObject(i);
-                    if (row != null) {
-                        events.add(Event.fromJson(row));
-                    }
+            JSONArray rows = root.getJSONArray("rows");
+            for (int i = 0; i < rows.length(); i++) {
+                Event event = Event.fromJson(rows.getJSONObject(i));
+                if (event.id() <= 0) {
+                    throw new JSONException("Invalid activity ID");
                 }
+                events.add(event);
             }
 
-            return new EventData(root.optInt("year", requestedYear), mergeYears(years), events);
+            return new EventData(responseYear, mergeYears(years), events);
         } catch (JSONException e) {
             throw new EventApiException("活动数据格式异常", e);
         }
